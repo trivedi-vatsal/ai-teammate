@@ -1,0 +1,26 @@
+name: AI Teammate - Example Usage
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  ai-pr-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: AI PR Review
+        uses: ./
+        with:
+          azure_openai_endpoint: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          azure_openai_api_key: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          azure_openai_model_name: ${{ secrets.AZURE_OPENAI_MODEL_NAME }}
+          review_depth: "comprehensive"
+          max_tokens: "2000"
+          temperature: "0.3"

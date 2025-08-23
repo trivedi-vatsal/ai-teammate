@@ -1,0 +1,37 @@
+name: "AI Teammate - PR Review"
+description: "Automated AI-powered pull request reviews using Azure OpenAI"
+author: "Vatsal Trivedi <trivedivatsal005@gmail.com>"
+branding:
+  icon: "robot"
+  color: "blue"
+
+inputs:
+  azure_openai_endpoint:
+    description: "Azure OpenAI endpoint URL"
+    required: true
+  azure_openai_api_key:
+    description: "Azure OpenAI API key"
+    required: true
+  azure_openai_model_name:
+    description: "Azure OpenAI model name"
+    required: true
+  review_depth:
+    description: "Review depth (basic, comprehensive, expert)"
+    required: false
+    default: "comprehensive"
+  max_tokens:
+    description: "Maximum tokens for AI response"
+    required: false
+    default: "2000"
+  temperature:
+    description: "AI creativity level (0.0-1.0)"
+    required: false
+    default: "0.3"
+
+runs:
+  using: "node20"
+  main: "dist/index.js"
+
+permissions:
+  contents: read
+  pull-requests: write
