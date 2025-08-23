@@ -245,7 +245,7 @@ function createCustomBasicPrompt(changes) {
 
 ### Technical Stack
 
-- **Runtime**: Node.js 20
+- **Runtime**: Node.js 20+ (required for Azure OpenAI compatibility)
 - **AI Service**: Azure OpenAI (GPT-4, GPT-3.5-turbo)
 - **GitHub Integration**: Octokit for API calls
 - **Structured Prompts**: XML format for LLM optimization
@@ -336,10 +336,15 @@ We welcome contributions! Here's how you can help:
 
 ### Development Setup
 
+**⚠️ Prerequisites: Node.js 20+ required**
+
 ```bash
 # Clone the repository
 git clone https://github.com/trivedi-vatsal/ai-teammate.git
 cd ai-teammate
+
+# Ensure you're using Node.js 20+
+node --version  # Should show v20.x.x
 
 # Install dependencies
 npm install

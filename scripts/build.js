@@ -12,10 +12,6 @@ try {
     fs.rmSync('dist', { recursive: true, force: true });
   }
 
-  // Install dependencies
-  console.log('📦 Installing dependencies...');
-  execSync('npm install', { stdio: 'inherit' });
-
   // Build with ncc
   console.log('⚡ Building with ncc...');
   execSync('npx ncc build src/index.js -o dist', { stdio: 'inherit' });
