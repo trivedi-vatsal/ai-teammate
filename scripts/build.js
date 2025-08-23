@@ -16,9 +16,15 @@ try {
   console.log('⚡ Building with ncc...');
   execSync('npx ncc build src/index.js -o dist', { stdio: 'inherit' });
 
-  // Copy action.yml to dist
+  // Copy action.yml to dist and update main path
   console.log('📋 Copying action.yml...');
   fs.copyFileSync('action.yml', 'dist/action.yml');
+  
+  // Update the main path in dist/action.yml to point to index.js (not dist/index.js)
+  const actionYmlPath = path.join('dist', 'action.yml');
+  let actionYmlContent = fs.readFileSync(actionYmlPath, 'utf8');
+  actionYmlContent = actionYmlContent.replace('main: "dist/index.js"', 'main: "index.js"');
+  fs.writeFileSync(actionYmlPath, actionYmlContent);
 
   console.log('✅ Build completed successfully!');
   console.log('📁 Output directory: dist/');
