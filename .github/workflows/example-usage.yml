@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: AI PR Review
-        uses: ./
+        uses: trivedi-vatsal/ai-teammate@v0.0.1-alph
         with:
           azure_openai_endpoint: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
           azure_openai_api_key: ${{ secrets.AZURE_OPENAI_API_KEY }}
