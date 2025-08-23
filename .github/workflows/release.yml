@@ -7,14 +7,10 @@ on:
       - "release/v*"
 
 jobs:
-  prepare:
+  build-and-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    outputs:
-      version: ${{ steps.extract_version.outputs.version }}
-      deleted_release: ${{ steps.check_release.outputs.deleted_release }}
-      deleted_tag: ${{ steps.check_release.outputs.deleted_tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,7 +28,7 @@ jobs:
         run: |
           VERSION="${{ steps.extract_version.outputs.version }}"
           echo "Checking for existing release and tag: ${VERSION}"
-
+          
           # Check if release exists and delete it
           if gh release view "${VERSION}" 2>/dev/null; then
             echo "Release ${VERSION} exists, deleting it..."
@@ -42,7 +38,7 @@ jobs:
             echo "No existing release found for ${VERSION}"
             echo "deleted_release=false" >> $GITHUB_OUTPUT
           fi
-
+          
           # Check if tag exists and delete it
           if git ls-remote --tags origin "${VERSION}" | grep -q "${VERSION}"; then
             echo "Tag ${VERSION} exists, deleting it..."
@@ -54,15 +50,6 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build:
-    runs-on: ubuntu-latest
-    needs: prepare
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -76,40 +63,23 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Commit built files
+      - name: Prepare release files
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
           # Create a release directory with built files
           mkdir -p release-files
           cp -r dist/* release-files/
           cp action.yml release-files/
+          # Update the main path in the copied action.yml
+          sed -i 's|main: "dist/index.js"|main: "index.js"|g' release-files/action.yml
+
+      - name: Commit built files
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
           # Add release files to git
           git add release-files/
           git commit -m "Build action for release" || echo "No changes to commit"
           git push origin HEAD:${{ github.ref_name }}
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-files
-          path: |
-            dist/index.js
-            dist/action.yml
-            release-files/
-          retention-days: 1
-
-  release:
-    runs-on: ubuntu-latest
-    needs: [prepare, build]
-    permissions:
-      contents: write
-    steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-files
-          path: .
 
       - name: Create Release
         id: create_release
@@ -117,15 +87,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ needs.prepare.outputs.version }}
-          release_name: Release ${{ needs.prepare.outputs.version }}
+          tag_name: ${{ steps.extract_version.outputs.version }}
+          release_name: Release ${{ steps.extract_version.outputs.version }}
           draft: false
           prerelease: false
-
-      - name: Update action.yml for release
-        run: |
-          # Update the action.yml to point to the correct main file location
-          sed -i 's|main: "dist/index.js"|main: "release-files/index.js"|g' action.yml
 
       - name: Upload Release Assets
         uses: actions/upload-release-asset@v1
