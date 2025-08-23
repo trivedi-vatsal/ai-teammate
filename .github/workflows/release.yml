@@ -1,15 +1,63 @@
 name: Release Action
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
+    # Allow deployment of release branches - pattern will be validated in job
+    branches:
+      - "release/v*"
 
 jobs:
-  build:
+  prepare:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      version: ${{ steps.extract_version.outputs.version }}
+      deleted_release: ${{ steps.check_release.outputs.deleted_release }}
+      deleted_tag: ${{ steps.check_release.outputs.deleted_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version from branch name
+        id: extract_version
+        run: |
+          BRANCH_NAME="${{ github.ref_name }}"
+          VERSION=${BRANCH_NAME#release/}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Extracted version: ${VERSION}"
+
+      - name: Check and delete existing release and tag
+        id: check_release
+        run: |
+          VERSION="${{ steps.extract_version.outputs.version }}"
+          echo "Checking for existing release and tag: ${VERSION}"
+
+          # Check if release exists and delete it
+          if gh release view "${VERSION}" 2>/dev/null; then
+            echo "Release ${VERSION} exists, deleting it..."
+            gh release delete "${VERSION}" --yes
+            echo "deleted_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "No existing release found for ${VERSION}"
+            echo "deleted_release=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Check if tag exists and delete it
+          if git ls-remote --tags origin "${VERSION}" | grep -q "${VERSION}"; then
+            echo "Tag ${VERSION} exists, deleting it..."
+            git push origin --delete "${VERSION}"
+            echo "deleted_tag=true" >> $GITHUB_OUTPUT
+          else
+            echo "No existing tag found for ${VERSION}"
+            echo "deleted_tag=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build:
+    runs-on: ubuntu-latest
+    needs: prepare
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,14 +74,35 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-files
+          path: |
+            dist/index.js
+            dist/action.yml
+          retention-days: 1
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [prepare, build]
+    permissions:
+      contents: write
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-files
+          path: ./dist
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref_name }}
+          tag_name: ${{ needs.prepare.outputs.version }}
+          release_name: Release ${{ needs.prepare.outputs.version }}
           draft: false
           prerelease: false
 
