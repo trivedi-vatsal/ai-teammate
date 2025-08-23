@@ -80,7 +80,12 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add dist/
+          # Create a release directory with built files
+          mkdir -p release-files
+          cp -r dist/* release-files/
+          cp action.yml release-files/
+          # Add release files to git
+          git add release-files/
           git commit -m "Build action for release" || echo "No changes to commit"
           git push origin HEAD:${{ github.ref_name }}
 
@@ -91,6 +96,7 @@ jobs:
           path: |
             dist/index.js
             dist/action.yml
+            release-files/
           retention-days: 1
 
   release:
@@ -103,7 +109,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-files
-          path: dist
+          path: .
 
       - name: Create Release
         id: create_release
@@ -116,13 +122,18 @@ jobs:
           draft: false
           prerelease: false
 
+      - name: Update action.yml for release
+        run: |
+          # Update the action.yml to point to the correct main file location
+          sed -i 's|main: "dist/index.js"|main: "release-files/index.js"|g' action.yml
+
       - name: Upload Release Assets
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/index.js
+          asset_path: release-files/index.js
           asset_name: index.js
           asset_content_type: application/javascript
 
@@ -132,7 +143,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/action.yml
+          asset_path: release-files/action.yml
           asset_name: action.yml
           asset_content_type: text/yaml
 
