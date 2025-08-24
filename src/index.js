@@ -17,7 +17,7 @@ async function run() {
       required: true,
     });
     const reviewDepth = core.getInput("review_depth") || "comprehensive";
-    const maxTokens = parseInt(core.getInput("max_tokens") || "2000");
+    const maxTokens = parseInt(core.getInput("max_tokens") || "4000");
     const temperature = parseFloat(core.getInput("temperature") || "0.3");
 
     // Get PR information from GitHub context
@@ -58,7 +58,7 @@ async function run() {
       log: console,
     });
 
-    // Get PR changes
+    // Get PR changes with actual code content
     let changes;
     try {
       const { data: files } = await octokit.rest.pulls.listFiles({
@@ -67,9 +67,54 @@ async function run() {
         pull_number: parseInt(prNumber),
       });
 
-      changes = files
-        .map((f) => `${f.filename} (${f.additions + f.deletions} changes)`)
-        .join("\n");
+      // Build detailed changes with actual code content
+      const changeDetails = [];
+      let totalTokens = 0;
+      const maxContextTokens = 20000; // Conservative token limit for context
+      let processedFiles = 0;
+
+      for (const file of files) {
+        // Process all files in sequence, but monitor token usage
+        let fileContent = `\n### File: ${file.filename}\n`;
+        fileContent += `**Status:** ${file.status} | **Changes:** +${file.additions} -${file.deletions}\n\n`;
+
+        if (file.patch && file.patch.length < 4000) {
+          // Limit patch size to avoid token overflow
+          fileContent += "```diff\n" + file.patch + "\n```\n";
+        } else if (file.patch) {
+          // For large files, show first part of the diff
+          fileContent +=
+            "```diff\n" +
+            file.patch.substring(0, 3000) +
+            "\n... (truncated)\n```\n";
+        } else {
+          fileContent += "*No diff available (likely binary file or rename)*\n";
+        }
+
+        // Rough token estimation (4 characters ≈ 1 token)
+        const fileTokens = Math.ceil(fileContent.length / 4);
+
+        // Check if adding this file would exceed token limits
+        if (totalTokens + fileTokens > maxContextTokens && processedFiles > 0) {
+          changeDetails.push(
+            `\n*Note: Processed ${processedFiles} of ${files.length} files. Remaining files omitted to stay within token limits.*`
+          );
+          break;
+        }
+
+        changeDetails.push(fileContent);
+        totalTokens += fileTokens;
+        processedFiles++;
+      }
+
+      changes = changeDetails.join("\n");
+
+      console.log(
+        `📊 Processed ${processedFiles} of ${files.length} files with detailed diffs`
+      );
+      console.log(
+        `📏 Total context length: ${changes.length} characters (~${totalTokens} tokens)`
+      );
     } catch (error) {
       console.error("❌ Failed to fetch PR files:", error.message);
       throw new Error(`Failed to fetch PR files: ${error.message}`);
