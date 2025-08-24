@@ -3,9 +3,9 @@
  */
 
 /**
- * Creates the system role prompt for the AI reviewer
- * @param {string} reviewDepth - The depth of review (basic, comprehensive, expert)
- * @returns {string} XML-formatted system prompt
+ * Returns the system prompt XML for the AI reviewer.
+ * @param {string} reviewDepth - Review depth (basic, comprehensive, expert)
+ * @returns {string}
  */
 function createSystemPrompt(reviewDepth) {
   return `<system_role>
@@ -88,7 +88,8 @@ ${changes}
       | filename | description |
     </rule>
     <rule>All other sections must be COLLAPSIBLE using &lt;details&gt;&lt;summary&gt; tags</rule>
-    <rule>For collapsible sections: Start with &lt;details&gt;&lt;summary&gt;## Section Title&lt;/summary&gt; and end with &lt;/details&gt;</rule>
+    <rule>For collapsible sections: Format as &lt;details&gt;&lt;summary&gt;✅ Section Title&lt;/summary&gt; content here &lt;/details&gt;</rule>
+    <rule>Do NOT use ## markdown headers for collapsible sections - use the details/summary tags only</rule>
     <rule>Focus EXCLUSIVELY on the code changes themselves - ignore PR metadata</rule>
     <rule>Be constructive, specific, and educational in your feedback</rule>
     <rule>Provide concrete examples and code suggestions when possible</rule>
@@ -136,7 +137,7 @@ ${changes}
       </format>
     </section>
     <section id="key_points">
-      <title><details><summary>## 🎯 Key Points</summary></title>
+      <title><details><summary>🎯 Key Points</summary></title>
       <description>Most important observations - both positive and areas for improvement. End with </details></description>
     </section>
   </review_framework>
@@ -199,8 +200,8 @@ ${changes}
       <description>How these changes affect system design, patterns, and structure. End with </details></description>
     </section>
     <section id="code_quality_deep_dive">
-      <title>💻 Code Quality Analysis</title>
-      <description>Detailed analysis of code patterns, practices, and implementation quality</description>
+      <title><details><summary>💻 Code Quality Analysis</summary></title>
+      <description>Detailed analysis of code patterns, practices, and implementation quality. End with </details></description>
     </section>
     <section id="security_audit">
       <title><details><summary>🔒 Security Assessment</summary></title>
@@ -225,7 +226,8 @@ ${changes}
       | filename | detailed technical description |
     </rule>
     <rule>ALL other sections must be COLLAPSIBLE using &lt;details&gt;&lt;summary&gt; tags</rule>
-    <rule>For collapsible sections: Start with &lt;details&gt;&lt;summary&gt;## Section Title&lt;/summary&gt; and end with &lt;/details&gt;</rule>
+    <rule>For collapsible sections: Format as &lt;details&gt;&lt;summary&gt;🏗 Section Title&lt;/summary&gt; content here &lt;/details&gt;</rule>
+    <rule>Do NOT use ## markdown headers for collapsible sections - use the details/summary tags only</rule>
     <rule>Perform comprehensive, senior-level technical analysis</rule>
     <rule>Consider system-wide implications and architectural patterns</rule>
     <rule>Analyze potential failure modes and edge cases thoroughly</rule>
