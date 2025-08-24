@@ -246,16 +246,11 @@ jobs:
       - name: Update marketplace tags
         run: |
           VERSION="${{ steps.extract_version.outputs.version }}"
-          MAJOR_VERSION=$(echo "$VERSION" | cut -d. -f1)
 
           echo "🏷️ Creating/updating marketplace tags..."
-
-          # Create or update major version tag (e.g., v1)
-          git tag -f "$MAJOR_VERSION" "${GITHUB_SHA}"
-          git push origin "$MAJOR_VERSION" --force
 
           # Create or update 'latest' tag for marketplace
           git tag -f "latest" "${GITHUB_SHA}"
           git push origin "latest" --force
 
-          echo "✅ Marketplace tags updated: $MAJOR_VERSION, latest"
+          echo "✅ Marketplace tags updated: latest"
