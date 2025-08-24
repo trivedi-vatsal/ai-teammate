@@ -17,9 +17,6 @@ on:
         description: "Custom version (only if version_type is custom)"
         required: false
         type: string
-  push:
-    branches:
-      - "release/v*"
 
 permissions:
   contents: write
