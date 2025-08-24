@@ -143,7 +143,7 @@ describe("AI Teammate Main Function", () => {
     );
     expect(core.setOutput).toHaveBeenCalledWith(
       "review",
-      expect.stringContaining("📊 Token Usage - Detailed Review")
+      expect.stringContaining("📊 Token Usage")
     );
     
     // Should create two separate review comments

@@ -66,6 +66,56 @@ on:
 2. Check repository permissions
 3. Verify GitHub token has proper scope
 
+### Token Management Issues
+
+**Problem**: Large PRs exceed token limits or cause high costs
+
+**Solutions**:
+
+1. **Use Basic Review Mode** for simple changes:
+
+   ```yaml
+   review_depth: 'basic'
+   ```
+
+2. **Monitor Token Usage**: Check the token usage reports in comments
+
+   ```markdown
+   📊 Token Usage - Overview
+   - Input Tokens: 1,500
+   - Output Tokens: 300
+   - Total Tokens: 1,800
+   ```
+
+3. **File Processing Limits**: AI Teammate automatically:
+   - Processes files in sequence with token monitoring
+   - Truncates large files (>4,000 characters) with context preservation
+   - Stops processing if token limit (~20,000) is reached
+   - Reports how many files were processed vs. total files
+
+**Expected Behavior**: You may see messages like:
+
+```text
+📊 Processed 5 of 8 files with detailed diffs
+*Note: Processed 5 of 8 files. Remaining files omitted to stay within token limits.*
+```
+
+### Dual Comment System
+
+**Expected Behavior**: AI Teammate posts **two separate comments**:
+
+1. **Overview Comment**: Executive summary with changes table
+2. **Detailed Review Comment**: Technical analysis with collapsible sections
+
+**Problem**: Only seeing one comment
+
+**Solutions**:
+
+1. Check GitHub API rate limits
+2. Verify pull-requests write permissions
+3. Look for error messages in Actions logs
+4. Both comments should appear within seconds of each other
+
 ## 🔧 Debug Mode
 
 Enable debug logging by adding to your workflow:

@@ -190,7 +190,7 @@ async function run() {
 
     const detailedReviewWithTokens =
       detailedReview +
-      `\n\n<details>\n<summary>📊 Token Usage - Detailed Review</summary>\n\n` +
+      `\n\n<details>\n<summary>📊 Token Usage</summary>\n\n` +
       `**Input Tokens:** ${reviewTokens.promptTokens}\n` +
       `**Output Tokens:** ${reviewTokens.completionTokens}\n` +
       `**Total Tokens:** ${reviewTokens.totalTokens}\n` +
