@@ -104,13 +104,14 @@ jobs:
             echo "Extracted version from branch: ${VERSION}"
           fi
 
-      - name: Remove existing release and tag if present
+      - name: Remove existing release, tag, and branch if present
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           VERSION="${{ steps.extract_version.outputs.version }}"
-          echo "Checking for existing release/tag: $VERSION"
+          RELEASE_BRANCH="release/$VERSION"
+          echo "Checking for existing release/tag/branch: $VERSION"
 
           # If release exists, delete it
           if gh release view "$VERSION" >/dev/null 2>&1; then
@@ -120,8 +121,9 @@ jobs:
             echo "No existing release."
           fi
 
-          # Ensure we have up-to-date tag info
-          git fetch --tags --quiet
+          # Ensure we have up-to-date info
+          git fetch --tags --prune --quiet
+          git fetch origin --prune --quiet
 
           # If tag exists (remote), delete it
           if git ls-remote --tags origin "refs/tags/$VERSION" | grep -q "$VERSION"; then
@@ -133,7 +135,22 @@ jobs:
 
           # If tag exists locally, delete it
           if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null; then
+            echo "Local tag $VERSION exists, deleting…"
             git tag -d "$VERSION"
+          fi
+
+          # If release branch exists (remote), delete it
+          if git ls-remote --heads origin "refs/heads/$RELEASE_BRANCH" | grep -q "$RELEASE_BRANCH"; then
+            echo "Release branch $RELEASE_BRANCH exists on origin, deleting…"
+            git push origin --delete "$RELEASE_BRANCH"
+          else
+            echo "No existing remote release branch."
+          fi
+
+          # If release branch exists locally, delete it
+          if git show-ref --verify --quiet "refs/heads/$RELEASE_BRANCH"; then
+            echo "Local release branch $RELEASE_BRANCH exists, deleting…"
+            git branch -D "$RELEASE_BRANCH"
           fi
 
       - name: Setup Node.js
@@ -196,12 +213,14 @@ jobs:
             # Push to current branch or create new release branch if on main
             if [[ "${{ github.ref_name }}" == "main" ]]; then
               RELEASE_BRANCH="release/${{ steps.extract_version.outputs.version }}"
+              echo "Creating new release branch: $RELEASE_BRANCH"
               git checkout -b "$RELEASE_BRANCH"
               git push origin "$RELEASE_BRANCH"
               echo "✅ Created and pushed release branch: $RELEASE_BRANCH"
             else
-              git push origin HEAD:${{ github.ref_name }}
-              echo "✅ Pushed changes to release branch"
+              echo "Force pushing changes to existing release branch"
+              git push origin HEAD:${{ github.ref_name }} --force
+              echo "✅ Force pushed changes to release branch"
             fi
           fi
 
