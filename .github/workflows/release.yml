@@ -41,13 +41,12 @@ jobs:
       - name: Validate release branch name
         run: |
           BRANCH="${{ github.ref_name }}"
-          # Allow manual dispatch from main branch or release branches
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "$BRANCH" == "main" ]]; then
             echo "✅ Manual dispatch from main branch allowed"
           elif [[ "$BRANCH" =~ ^release/v[0-9]+(\.[0-9]+){2}(-[A-Za-z0-9.-]+)?$ ]]; then
             echo "✅ Valid release branch: $BRANCH"
           else
-            echo "::error::Invalid branch for release. Use 'main' for manual dispatch or 'release/v<semver>' branch (e.g., release/v1.2.3). Current: $BRANCH"
+            echo "::error::Invalid branch for release. Use 'main' for manual dispatch or 'release/v<semver>' (e.g., release/v1.2.3). Current: $BRANCH"
             exit 1
           fi
 
@@ -55,58 +54,27 @@ jobs:
         id: extract_version
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.ref_name }}" == "main" ]]; then
-            # Manual dispatch - calculate version based on input and latest git tag
-            # Get the latest tag, default to v0.0.0 if no tags exist
-            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            LATEST_TAG=$(gh release list --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "v0.0.0")
             echo "Latest tag found: $LATEST_TAG"
-            
-            # Remove 'v' prefix and validate version format
             CURRENT_VERSION=${LATEST_TAG#v}
-            echo "Current version (without v): $CURRENT_VERSION"
-            
-            # Validate version format (should be x.y.z or x.y.z-suffix)
             if [[ ! "$CURRENT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-.*)?$ ]]; then
-              echo "Invalid version format '$CURRENT_VERSION', defaulting to 0.0.0"
               CURRENT_VERSION="0.0.0"
             fi
-            
+
             case "${{ github.event.inputs.version_type }}" in
               "patch")
-                NEW_VERSION=$(node -p "
-                  const v = '$CURRENT_VERSION'.split('-')[0].split('.');
-                  if (v.length !== 3) throw new Error('Invalid version format');
-                  v[2] = String(Number(v[2]) + 1);
-                  'v' + v.join('.');
-                ")
+                NEW_VERSION=$(node -p "const v='$CURRENT_VERSION'.split('-')[0].split('.'); v[2]++; 'v'+v.join('.') ")
                 ;;
               "minor")
-                NEW_VERSION=$(node -p "
-                  const v = '$CURRENT_VERSION'.split('-')[0].split('.');
-                  if (v.length !== 3) throw new Error('Invalid version format');
-                  v[1] = String(Number(v[1]) + 1);
-                  v[2] = '0';
-                  'v' + v.join('.');
-                ")
+                NEW_VERSION=$(node -p "const v='$CURRENT_VERSION'.split('-')[0].split('.'); v[1]++; v[2]=0; 'v'+v.join('.') ")
                 ;;
               "major")
-                NEW_VERSION=$(node -p "
-                  const v = '$CURRENT_VERSION'.split('-')[0].split('.');
-                  if (v.length !== 3) throw new Error('Invalid version format');
-                  v[0] = String(Number(v[0]) + 1);
-                  v[1] = '0';
-                  v[2] = '0';
-                  'v' + v.join('.');
-                ")
+                NEW_VERSION=$(node -p "const v='$CURRENT_VERSION'.split('-')[0].split('.'); v[0]++; v[1]=0; v[2]=0; 'v'+v.join('.') ")
                 ;;
               "custom")
-                if [[ -z "${{ github.event.inputs.custom_version }}" ]]; then
-                  echo "::error::Custom version is required when version_type is 'custom'"
-                  exit 1
-                fi
-                # Validate custom version format
                 CUSTOM_VER="${{ github.event.inputs.custom_version }}"
-                if [[ ! "$CUSTOM_VER" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-.*)?$ ]]; then
-                  echo "::error::Custom version must be in format x.y.z or x.y.z-suffix"
+                if [[ -z "$CUSTOM_VER" || ! "$CUSTOM_VER" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-.*)?$ ]]; then
+                  echo "::error::Custom version must be x.y.z or x.y.z-suffix"
                   exit 1
                 fi
                 NEW_VERSION="v$CUSTOM_VER"
@@ -116,77 +84,39 @@ jobs:
                 exit 1
                 ;;
             esac
-            
-            # Validate the new version
-            if [[ ! "$NEW_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-.*)?$ ]]; then
-              echo "::error::Generated invalid version: $NEW_VERSION"
-              exit 1
-            fi
-            
-            echo "version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
-            echo "Calculated version: ${NEW_VERSION} (based on latest tag: ${LATEST_TAG})"
+
+            echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+            echo "Calculated version: $NEW_VERSION (latest: $LATEST_TAG)"
           else
-            # Release branch - extract from branch name
-            BRANCH_NAME="${{ github.ref_name }}"
-            VERSION=${BRANCH_NAME#release/}
-            
-            # Validate extracted version
+            VERSION="${{ github.ref_name#release/ }}"
             if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-.*)?$ ]]; then
-              echo "::error::Invalid version format in branch name: $VERSION"
+              echo "::error::Invalid version format in branch: $VERSION"
               exit 1
             fi
-            
-            echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-            echo "Extracted version from branch: ${VERSION}"
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "Extracted version from branch: $VERSION"
           fi
 
       - name: Remove existing release, tag, and branch if present
         env:
           GH_TOKEN: ${{ github.token }}
-          GITHUB_TOKEN: ${{ github.token }}
         run: |
           VERSION="${{ steps.extract_version.outputs.version }}"
           RELEASE_BRANCH="release/$VERSION"
-          echo "Checking for existing release/tag/branch: $VERSION"
 
-          # If release exists, delete it
           if gh release view "$VERSION" >/dev/null 2>&1; then
-            echo "Release $VERSION exists, deleting…"
+            echo "Deleting existing release $VERSION"
             gh release delete "$VERSION" --yes
-          else
-            echo "No existing release."
           fi
 
-          # Ensure we have up-to-date info
-          git fetch --tags --prune --quiet
-          git fetch origin --prune --quiet
-
-          # If tag exists (remote), delete it
           if git ls-remote --tags origin "refs/tags/$VERSION" | grep -q "$VERSION"; then
-            echo "Tag $VERSION exists on origin, deleting…"
+            echo "Deleting remote tag $VERSION"
             git push origin --delete "$VERSION"
-          else
-            echo "No existing remote tag."
           fi
 
-          # If tag exists locally, delete it
-          if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null; then
-            echo "Local tag $VERSION exists, deleting…"
-            git tag -d "$VERSION"
-          fi
-
-          # If release branch exists (remote), delete it
-          if git ls-remote --heads origin "refs/heads/$RELEASE_BRANCH" | grep -q "$RELEASE_BRANCH"; then
-            echo "Release branch $RELEASE_BRANCH exists on origin, deleting…"
+          if git ls-remote --heads origin "$RELEASE_BRANCH" | grep -q "$RELEASE_BRANCH"; then
+            echo "Deleting remote branch $RELEASE_BRANCH"
             git push origin --delete "$RELEASE_BRANCH"
-          else
-            echo "No existing remote release branch."
-          fi
-
-          # If release branch exists locally, delete it
-          if git show-ref --verify --quiet "refs/heads/$RELEASE_BRANCH"; then
-            echo "Local release branch $RELEASE_BRANCH exists, deleting…"
-            git branch -D "$RELEASE_BRANCH"
           fi
 
       - name: Setup Node.js
@@ -208,105 +138,49 @@ jobs:
 
       - name: Verify build output
         run: |
-          test -f dist/index.js || { echo "::error::dist/index.js not found. Ensure your build outputs to dist/"; exit 1; }
+          test -f dist/index.js || { echo "::error::dist/index.js missing"; exit 1; }
           echo "✅ Build output verified"
 
-      - name: Validate action.yml
+      - name: Commit built files to release branch
         run: |
-          # Check if action.yml is valid YAML and has required fields
-          node -e "
-            const yaml = require('fs').readFileSync('action.yml', 'utf8');
-            const action = require('js-yaml').load(yaml);
-            if (!action.name || !action.description || !action.runs) {
-              throw new Error('Invalid action.yml: missing required fields');
-            }
-            if (action.runs.main !== 'dist/index.js') {
-              throw new Error('action.yml main should point to dist/index.js');
-            }
-            console.log('✅ action.yml validation passed');
-          " 2>/dev/null || {
-            echo "::warning::action.yml validation skipped (js-yaml not available)"
-          }
-
-      - name: Commit built files to the release branch
-        run: |
+          VERSION="${{ steps.extract_version.outputs.version }}"
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-
-          # Set environment variable to skip dist cleaning in pre-commit hook
-          export SKIP_DIST_CLEAN=1
-
-          # Add dist files
           git add -f dist/
-
-          # Commit changes
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            # Skip pre-commit hooks for release commits
-            git commit -m "chore(release): prepare for ${{ steps.extract_version.outputs.version }}" --no-verify
-            
-            # Push to current branch or create new release branch if on main
+            git commit -m "chore(release): prepare for $VERSION" --no-verify
             if [[ "${{ github.ref_name }}" == "main" ]]; then
-              RELEASE_BRANCH="release/${{ steps.extract_version.outputs.version }}"
-              echo "Creating new release branch: $RELEASE_BRANCH"
+              RELEASE_BRANCH="release/$VERSION"
               git checkout -b "$RELEASE_BRANCH"
               git push origin "$RELEASE_BRANCH"
-              echo "✅ Created and pushed release branch: $RELEASE_BRANCH"
             else
-              echo "Force pushing changes to existing release branch"
               git push origin HEAD:${{ github.ref_name }} --force
-              echo "✅ Force pushed changes to release branch"
             fi
           fi
 
-      - name: Create GitHub Release (and tag)
+      - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          GITHUB_TOKEN: ${{ github.token }}
         run: |
           VERSION="${{ steps.extract_version.outputs.version }}"
-          # Create a release pointing at the current commit of this branch.
           gh release create "$VERSION" \
             --title "AI Teammate $VERSION" \
             --target "${GITHUB_SHA}" \
             --generate-notes \
-            --notes "🤖 **AI Teammate - PR Review Action**
+            --notes "🤖 AI Teammate - PR Review Action
 
-          **What's New in $VERSION:**
-
-          # $(gh api repos/${{ github.repository }}/releases/latest --jq '.body // \"Initial release\"' 2>/dev/null || echo 'Initial release of AI Teammate action')
-
-          ---
-
-          **📋 Features:**
-          - 🔍 Pure code analysis (ignores PR metadata)
+          Features:
+          - 🔍 Pure code analysis
           - 🤖 Azure OpenAI powered reviews
-          - 📊 Configurable review depth (basic/comprehensive/expert)
-          - 🔧 Customizable parameters
-          - 💬 Automatic PR comments
-
-          **🚀 Quick Setup:**
-          \`\`\`yaml
-          - uses: trivedi-vatsal/ai-teammate@$VERSION
-            with:
-              github_token: \${{ secrets.GITHUB_TOKEN }}
-              azure_openai_endpoint: 'https://your-resource.openai.azure.com/'
-              azure_openai_api_key: 'your-api-key-here'
-              azure_openai_model_name: 'gpt-4'
-          \`\`\`
-
-          📚 [Full Documentation](https://github.com/trivedi-vatsal/ai-teammate#readme)"
-          echo "✅ Release $VERSION created successfully"
+          - 📊 Configurable depth
+          - 🔧 Customizable
+          - 💬 Auto PR comments"
+          echo "✅ Release $VERSION created"
 
       - name: Update marketplace tags
         run: |
-          VERSION="${{ steps.extract_version.outputs.version }}"
-
-          echo "🏷️ Creating/updating marketplace tags..."
-
-          # Create or update 'latest' tag for marketplace
-          git tag -f "latest" "${GITHUB_SHA}"
-          git push origin "latest" --force
-
-          echo "✅ Marketplace tags updated: latest"
+          git tag -f latest "${GITHUB_SHA}"
+          git push origin latest --force
+          echo "✅ Marketplace tag 'latest' updated"
