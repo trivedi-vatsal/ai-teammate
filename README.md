@@ -99,12 +99,6 @@ For detailed documentation, see the [docs](./docs/) directory:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
-
-- **Azure OpenAI** for providing the AI capabilities
-- **GitHub** for the Actions platform
-- **Octokit** for GitHub API integration
-
 ---
 
 **Ready to revolutionize your code reviews?** 🚀

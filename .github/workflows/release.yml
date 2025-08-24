@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version_type:
-        description: 'Release type'
+        description: "Release type"
         required: true
-        default: 'patch'
+        default: "patch"
         type: choice
         options:
           - patch
@@ -14,7 +14,7 @@ on:
           - major
           - custom
       custom_version:
-        description: 'Custom version (only if version_type is custom)'
+        description: "Custom version (only if version_type is custom)"
         required: false
         type: string
   push:
@@ -55,8 +55,10 @@ jobs:
         id: extract_version
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.ref_name }}" == "main" ]]; then
-            # Manual dispatch - calculate version based on input
-            CURRENT_VERSION=$(node -p "require('./package.json').version")
+            # Manual dispatch - calculate version based on input and latest git tag
+            # Get the latest tag, default to v0.0.0 if no tags exist
+            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            CURRENT_VERSION=${LATEST_TAG#v}
             
             case "${{ github.event.inputs.version_type }}" in
               "patch")
@@ -93,7 +95,7 @@ jobs:
             esac
             
             echo "version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
-            echo "Calculated version: ${NEW_VERSION}"
+            echo "Calculated version: ${NEW_VERSION} (based on latest tag: ${LATEST_TAG})"
           else
             # Release branch - extract from branch name
             BRANCH_NAME="${{ github.ref_name }}"
@@ -143,40 +145,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Update package.json version (if manual dispatch)
-        if: github.event_name == 'workflow_dispatch' && github.ref_name == 'main'
-        run: |
-          VERSION="${{ steps.extract_version.outputs.version }}"
-          CLEAN_VERSION=${VERSION#v}
-          
-          # Update package.json version
-          node -e "
-            const pkg = require('./package.json');
-            pkg.version = '$CLEAN_VERSION';
-            require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\n');
-          "
-          
-          echo "✅ Updated package.json version to $CLEAN_VERSION"
-
       - name: Run tests
         run: npm test
         env:
           CI: true
-
-      - name: Validate package.json version matches branch
-        run: |
-          VERSION="${{ steps.extract_version.outputs.version }}"
-          PACKAGE_VERSION=$(node -p "require('./package.json').version")
-          
-          # Remove 'v' prefix from VERSION for comparison
-          CLEAN_VERSION=${VERSION#v}
-          
-          if [ "$PACKAGE_VERSION" != "$CLEAN_VERSION" ]; then
-            echo "::error::Version mismatch! package.json: $PACKAGE_VERSION, branch: $CLEAN_VERSION"
-            echo "::error::Update package.json version to match release branch"
-            exit 1
-          fi
-          echo "✅ Version validation passed: $PACKAGE_VERSION"
 
       - name: Build
         run: npm run build
@@ -207,14 +179,13 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          
+
           # Set environment variable to skip dist cleaning in pre-commit hook
           export SKIP_DIST_CLEAN=1
-          
-          # Add all changes (package.json version update, dist files)
-          git add package.json
+
+          # Add dist files
           git add -f dist/
-          
+
           # Commit changes
           if git diff --staged --quiet; then
             echo "No changes to commit"
@@ -248,27 +219,27 @@ jobs:
             --notes "🤖 **AI Teammate - PR Review Action**
 
           **What's New in $VERSION:**
-          
+
           $(gh api repos/${{ github.repository }}/releases/latest --jq '.body // \"Initial release\"' 2>/dev/null || echo 'Initial release of AI Teammate action')
-          
+
           ---
-          
+
           **📋 Features:**
           - 🔍 Pure code analysis (ignores PR metadata)
           - 🤖 Azure OpenAI powered reviews
           - 📊 Configurable review depth (basic/comprehensive/expert)
           - 🔧 Customizable parameters
           - 💬 Automatic PR comments
-          
+
           **🚀 Quick Setup:**
           \`\`\`yaml
           - uses: trivedi-vatsal/ai-teammate@$VERSION
             with:
-              azure_openai_endpoint: \${{ secrets.AZURE_OPENAI_ENDPOINT }}
-              azure_openai_api_key: \${{ secrets.AZURE_OPENAI_API_KEY }}
-              azure_openai_model_name: \${{ secrets.AZURE_OPENAI_MODEL_NAME }}
+              azure_openai_endpoint: 'https://your-resource.openai.azure.com/'
+              azure_openai_api_key: 'your-api-key-here'
+              azure_openai_model_name: 'gpt-4'
           \`\`\`
-          
+
           📚 [Full Documentation](https://github.com/trivedi-vatsal/ai-teammate#readme)"
           echo "✅ Release $VERSION created successfully"
 
@@ -276,15 +247,15 @@ jobs:
         run: |
           VERSION="${{ steps.extract_version.outputs.version }}"
           MAJOR_VERSION=$(echo "$VERSION" | cut -d. -f1)
-          
+
           echo "🏷️ Creating/updating marketplace tags..."
-          
+
           # Create or update major version tag (e.g., v1)
           git tag -f "$MAJOR_VERSION" "${GITHUB_SHA}"
           git push origin "$MAJOR_VERSION" --force
-          
+
           # Create or update 'latest' tag for marketplace
           git tag -f "latest" "${GITHUB_SHA}"
           git push origin "latest" --force
-          
+
           echo "✅ Marketplace tags updated: $MAJOR_VERSION, latest"
