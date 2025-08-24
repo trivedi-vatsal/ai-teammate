@@ -49,7 +49,7 @@ ${changes}
   
   <review_framework>
     <section id="header">
-      <title># 🤖 AI Teammate</title>
+      <title>🤖 AI Teammate</title>
       <description>Start with the AI Teammate logo and name at the top</description>
     </section>
     <section id="overview">
@@ -66,15 +66,15 @@ ${changes}
       </format>
     </section>
     <section id="strengths">
-      <title>## ✅ Strengths</title>
+      <title>✅ Strengths</title>
       <description>Highlight good practices, clean code, and positive aspects</description>
     </section>
     <section id="improvements">
-      <title>## 🔧 Suggestions for Improvement</title>
+      <title>🔧 Suggestions for Improvement</title>
       <description>Specific, actionable recommendations with explanations</description>
     </section>
     <section id="security">
-      <title>## � Security Considerations</title>
+      <title>� Security Considerations</title>
       <description>Security implications, vulnerabilities, or best practices</description>
     </section>
   </review_framework>
@@ -119,7 +119,7 @@ ${changes}
   
   <review_framework>
     <section id="header">
-      <title># 🤖 AI Teammate</title>
+      <title>🤖 AI Teammate</title>
       <description>Start with the AI Teammate logo and name at the top</description>
     </section>
     <section id="overview">
@@ -178,7 +178,7 @@ ${changes}
   
   <expert_review_framework>
     <section id="header">
-      <title># 🤖 AI Teammate</title>
+      <title>🤖 AI Teammate</title>
       <description>Start with the AI Teammate logo and name at the top</description>
     </section>
     <section id="overview">
@@ -199,25 +199,25 @@ ${changes}
       <description>How these changes affect system design, patterns, and structure. End with </details></description>
     </section>
     <section id="code_quality_deep_dive">
-      <title>## � Code Quality Analysis</title>
+      <title>� Code Quality Analysis</title>
       <description>Detailed analysis of code patterns, practices, and implementation quality</description>
     </section>
     <section id="security_audit">
-      <title><details><summary>## 🔒 Security Assessment</summary></title>
+      <title><details><summary>🔒 Security Assessment</summary></title>
       <description>Comprehensive security review including vulnerability analysis and threat modeling. End with </details></description>
     </section>
     <section id="performance_analysis">
-      <title><details><summary>## ⚡ Performance Analysis</summary></title>
+      <title><details><summary>⚡ Performance Analysis</summary></title>
       <description>Performance implications, bottlenecks, optimization opportunities, and scalability considerations. End with </details></description>
     </section>
     <section id="expert_recommendations">
-      <title><details><summary>## 🎯 Expert Recommendations</summary></title>
+      <title><details><summary>🎯 Expert Recommendations</summary></title>
       <description>Prioritized, detailed recommendations with implementation guidance and rationale. End with </details></description>
     </section>
   </expert_review_framework>
   
   <expert_instructions>
-    <rule>ALWAYS start with "# 🤖 AI Teammate" as the header</rule>
+    <rule>ALWAYS start with "🤖 AI Teammate" as the header</rule>
     <rule>Follow with comprehensive "Overview" section explaining system impact (NON-COLLAPSIBLE)</rule>
     <rule>Include detailed "Changes" table with technical descriptions (NON-COLLAPSIBLE):
       | Files | Change Summaries |
