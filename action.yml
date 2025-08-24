@@ -23,10 +23,6 @@ inputs:
     description: "Review depth (basic, comprehensive, expert)"
     required: false
     default: "comprehensive"
-  max_tokens:
-    description: "Maximum tokens for AI response"
-    required: false
-    default: "2000"
   temperature:
     description: "AI creativity level (0.0-1.0)"
     required: false

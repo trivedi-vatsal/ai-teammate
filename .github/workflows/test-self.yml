@@ -34,7 +34,6 @@ jobs:
           azure_openai_api_key: ${{ secrets.AZURE_OPENAI_API_KEY }}
           azure_openai_model_name: ${{ secrets.AZURE_OPENAI_MODEL_NAME }}
           review_depth: "expert"
-          max_tokens: "2000"
           temperature: "0.5"
 
       # - name: Test AI PR Review (comprehensive)

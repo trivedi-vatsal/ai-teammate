@@ -17,7 +17,6 @@ async function run() {
       required: true,
     });
     const reviewDepth = core.getInput("review_depth") || "comprehensive";
-    const maxTokens = parseInt(core.getInput("max_tokens") || "4000");
     const temperature = parseFloat(core.getInput("temperature") || "0.3");
 
     // Get PR information from GitHub context
@@ -138,12 +137,26 @@ async function run() {
         },
       ],
       {
-        maxTokens: maxTokens,
         temperature: temperature,
       }
     );
 
     const overviewMessage = overviewResult.choices[0].message.content;
+
+    // Add token usage summary to overview message
+    const overviewTokens = overviewResult.usage;
+    console.log(
+      `📊 Overview API Call - Input: ${overviewTokens.promptTokens}, Output: ${overviewTokens.completionTokens}, Total: ${overviewTokens.totalTokens}`
+    );
+
+    const overviewWithTokens =
+      overviewMessage +
+      `\n\n<details>\n<summary>📊 Token Usage - Overview</summary>\n\n` +
+      `**Input Tokens:** ${overviewTokens.promptTokens}\n` +
+      `**Output Tokens:** ${overviewTokens.completionTokens}\n` +
+      `**Total Tokens:** ${overviewTokens.totalTokens}\n` +
+      `**Context Length:** ${changes.length} characters\n\n` +
+      `</details>`;
 
     // Create detailed review prompt
     const reviewPrompt = createPromptByDepth(changes, reviewDepth);
@@ -163,16 +176,30 @@ async function run() {
         },
       ],
       {
-        maxTokens: maxTokens,
         temperature: temperature,
       }
     );
 
     const detailedReview = reviewResult.choices[0].message.content;
 
+    // Add token usage summary to detailed review
+    const reviewTokens = reviewResult.usage;
+    console.log(
+      `📊 Review API Call - Input: ${reviewTokens.promptTokens}, Output: ${reviewTokens.completionTokens}, Total: ${reviewTokens.totalTokens}`
+    );
+
+    const detailedReviewWithTokens =
+      detailedReview +
+      `\n\n<details>\n<summary>📊 Token Usage - Detailed Review</summary>\n\n` +
+      `**Input Tokens:** ${reviewTokens.promptTokens}\n` +
+      `**Output Tokens:** ${reviewTokens.completionTokens}\n` +
+      `**Total Tokens:** ${reviewTokens.totalTokens}\n` +
+      `**Review Depth:** ${reviewDepth}\n\n` +
+      `</details>`;
+
     // Set outputs for GitHub Actions
-    core.setOutput("overview", overviewMessage);
-    core.setOutput("review", detailedReview);
+    core.setOutput("overview", overviewWithTokens);
+    core.setOutput("review", detailedReviewWithTokens);
 
     // Post overview and changes comment first
     try {
@@ -181,7 +208,7 @@ async function run() {
         owner: repoOwner,
         repo: repoName,
         pull_number: parseInt(prNumber),
-        body: overviewMessage,
+        body: overviewWithTokens,
         event: "COMMENT",
       });
     } catch (error) {
@@ -196,7 +223,7 @@ async function run() {
         owner: repoOwner,
         repo: repoName,
         pull_number: parseInt(prNumber),
-        body: detailedReview,
+        body: detailedReviewWithTokens,
         event: "COMMENT",
       });
     } catch (error) {
