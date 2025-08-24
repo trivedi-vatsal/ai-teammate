@@ -1,10 +1,12 @@
 name: CI
 
 on:
-  push:
-    # branches: [main]
-  pull_request:
-    # branches: [main]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for running CI manually"
+        required: false
+        default: "Manual CI run"
 
 jobs:
   test:

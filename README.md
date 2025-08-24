@@ -55,6 +55,7 @@ jobs:
       - name: AI PR Review
         uses: trivedi-vatsal/ai-teammate@v1
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           azure_openai_endpoint: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
           azure_openai_api_key: ${{ secrets.AZURE_OPENAI_API_KEY }}
           azure_openai_model_name: ${{ secrets.AZURE_OPENAI_MODEL_NAME }}

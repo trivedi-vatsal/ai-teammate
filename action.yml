@@ -6,6 +6,10 @@ branding:
   color: "blue"
 
 inputs:
+  github_token:
+    description: "GitHub token for API access"
+    required: true
+    default: ${{ github.token }}
   azure_openai_endpoint:
     description: "Azure OpenAI endpoint URL"
     required: true

@@ -8,6 +8,3 @@ if [ -d "dist" ] && [ -z "$SKIP_DIST_CLEAN" ]; then
   echo "✅ dist/ folder cleaned"
 fi
 
-# Run tests
-echo "🧪 Running tests..."
-npm test

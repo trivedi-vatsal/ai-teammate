@@ -4,6 +4,11 @@ Welcome to the AI Teammate documentation! This directory contains detailed infor
 
 ## 📋 Table of Contents
 
+### Quick Start
+
+- **[Simple Release Steps](./simple-release-steps.md)** - Quick guide to release your action (no automated testing)
+- **[Release Instructions](./release-instructions.md)** - Comprehensive release guide with testing
+
 ### For Users
 
 - **[Advanced Configuration](./advanced-configuration.md)** - Learn about custom review depths, XML prompts, and conditional reviews

@@ -7,6 +7,7 @@
 **Problem**: Azure OpenAI authentication fails
 
 **Solutions**:
+
 ```bash
 # Verify your Azure OpenAI credentials
 # Check endpoint, API key, and model name
@@ -23,6 +24,7 @@
 **Problem**: GitHub Actions lacks permissions
 
 **Solution**:
+
 ```yaml
 # Ensure workflow has correct permissions
 permissions:
@@ -35,6 +37,7 @@ permissions:
 **Problem**: API rate limits exceeded
 
 **Solutions**:
+
 ```yaml
 # Reduce frequency or increase delays
 on:
@@ -47,6 +50,7 @@ on:
 **Problem**: Action fails to build or run
 
 **Solutions**:
+
 1. Check Node.js version (requires 20+)
 2. Verify all dependencies are installed
 3. Ensure dist/ directory exists and is built
@@ -57,6 +61,7 @@ on:
 **Problem**: Action can't find PR information
 
 **Solutions**:
+
 1. Ensure action runs on `pull_request` events
 2. Check repository permissions
 3. Verify GitHub token has proper scope

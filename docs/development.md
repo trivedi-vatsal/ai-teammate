@@ -73,7 +73,8 @@ git push origin release/v1.0.1
 # 4. The action will be published to GitHub Marketplace
 ```
 
-### 🎯 Option 1 - Manual Release (Recommended):
+### 🎯 Option 1 - Manual Release (Recommended)
+
 1. Go to GitHub Actions tab
 2. Select "Release Action" workflow
 3. Click "Run workflow"
@@ -81,15 +82,17 @@ git push origin release/v1.0.1
 5. Click "Run workflow" button
    → This will automatically update package.json, build, and release
 
-### 🎯 Option 2 - Branch-based Release:
+### 🎯 Option 2 - Branch-based Release
+
 1. Choose a version and create release branch
 2. Update package.json version manually
 3. Push the release branch
 4. Release workflow will run automatically
 
-### 🤖 The workflow will:
+### 🤖 The workflow will
+
 - ✅ Run all tests
-- ✅ Validate version consistency 
+- ✅ Validate version consistency
 - ✅ Build the action
 - ✅ Create GitHub release with detailed notes
 - ✅ Update marketplace tags (v1, latest)

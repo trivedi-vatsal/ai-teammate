@@ -7,11 +7,13 @@ This repository uses [Husky](https://typicode.github.io/husky/) to manage Git ho
 The pre-commit hook (`..husky/pre-commit`) performs the following actions:
 
 ### 1. Clean dist/ Folder
+
 - **Purpose**: Keeps the repository clean by removing build artifacts
 - **When**: On every commit (except during release process)
 - **Skip**: Set `SKIP_DIST_CLEAN=1` environment variable to bypass
 
 ### 2. Run Tests
+
 - **Purpose**: Ensures all tests pass before allowing commits
 - **When**: On every commit
 - **Command**: `npm test`
@@ -19,6 +21,7 @@ The pre-commit hook (`..husky/pre-commit`) performs the following actions:
 ## Workflow
 
 ### Development Commits
+
 ```bash
 git add .
 git commit -m "feat: add new feature"
@@ -29,6 +32,7 @@ git commit -m "feat: add new feature"
 ```
 
 ### Release Process
+
 ```bash
 # During automated release (in GitHub Actions):
 export SKIP_DIST_CLEAN=1

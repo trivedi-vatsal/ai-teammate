@@ -6,6 +6,7 @@ const { createSystemPrompt, createPromptByDepth } = require("./prompts");
 async function run() {
   try {
     // Get inputs from action
+    const githubToken = core.getInput('github_token', { required: true });
     const endpoint = core.getInput('azure_openai_endpoint', { required: true });
     const apiKey = core.getInput('azure_openai_api_key', { required: true });
     const modelName = core.getInput('azure_openai_model_name', { required: true });
@@ -41,6 +42,7 @@ async function run() {
 
     // Initialize Octokit for GitHub API calls
     const octokit = new Octokit({
+      auth: githubToken,
       log: console,
     });
     console.log("✅ Octokit initialized for GitHub API");
