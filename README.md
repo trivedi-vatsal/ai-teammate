@@ -56,7 +56,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: AI PR Review
-        uses: trivedi-vatsal/ai-teammate@v1
+        uses: trivedi-vatsal/ai-teammate@latest
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           azure_openai_endpoint: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
