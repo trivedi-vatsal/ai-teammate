@@ -134,12 +134,3 @@ AI Teammate's enhanced dual-comment system provides:
 **Star this repository** if you find it helpful! ⭐
 
 ---
-
-## 📊 Test Coverage
-
-Current test coverage: **92.47%** with comprehensive testing of:
-
-- Core review functionality and error handling
-- All three review depth modes (basic, comprehensive, expert)  
-- XML prompt generation and validation
-- Token management and file processing logic
