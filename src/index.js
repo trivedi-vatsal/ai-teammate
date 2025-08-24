@@ -1,7 +1,11 @@
 const { OpenAIClient, AzureKeyCredential } = require("@azure/openai");
 const core = require("@actions/core");
 const { Octokit } = require("@octokit/action");
-const { createSystemPrompt, createPromptByDepth } = require("./prompts");
+const {
+  createSystemPrompt,
+  createOverviewAndChangesPrompt,
+  createPromptByDepth,
+} = require("./prompts");
 
 async function run() {
   try {
@@ -71,9 +75,12 @@ async function run() {
       throw new Error(`Failed to fetch PR files: ${error.message}`);
     }
 
-    // Create review prompt based on depth
-    const prompt = createPromptByDepth(changes, reviewDepth);
-    const result = await client.getChatCompletions(
+    // Create overview and changes prompt
+    const overviewPrompt = createOverviewAndChangesPrompt(changes);
+
+    // Generate overview and changes message
+    console.log("🔍 Generating overview and changes...");
+    const overviewResult = await client.getChatCompletions(
       modelName,
       [
         {
@@ -82,7 +89,7 @@ async function run() {
         },
         {
           role: "user",
-          content: prompt,
+          content: overviewPrompt,
         },
       ],
       {
@@ -91,26 +98,70 @@ async function run() {
       }
     );
 
-    const review = result.choices[0].message.content;
+    const overviewMessage = overviewResult.choices[0].message.content;
 
-    // Set output for GitHub Actions
-    core.setOutput("review", review);
+    // Create detailed review prompt
+    const reviewPrompt = createPromptByDepth(changes, reviewDepth);
 
-    // Post review comment
+    // Generate detailed review
+    console.log("🔍 Generating detailed review...");
+    const reviewResult = await client.getChatCompletions(
+      modelName,
+      [
+        {
+          role: "system",
+          content: createSystemPrompt(reviewDepth),
+        },
+        {
+          role: "user",
+          content: reviewPrompt,
+        },
+      ],
+      {
+        maxTokens: maxTokens,
+        temperature: temperature,
+      }
+    );
+
+    const detailedReview = reviewResult.choices[0].message.content;
+
+    // Set outputs for GitHub Actions
+    core.setOutput("overview", overviewMessage);
+    core.setOutput("review", detailedReview);
+
+    // Post overview and changes comment first
     try {
+      console.log("📝 Posting overview and changes...");
       await octokit.rest.pulls.createReview({
         owner: repoOwner,
         repo: repoName,
         pull_number: parseInt(prNumber),
-        body: review,
+        body: overviewMessage,
         event: "COMMENT",
       });
     } catch (error) {
-      console.error("❌ Failed to post review:", error.message);
-      throw new Error(`Failed to post review: ${error.message}`);
+      console.error("❌ Failed to post overview:", error.message);
+      throw new Error(`Failed to post overview: ${error.message}`);
+    }
+
+    // Post detailed review comment second
+    try {
+      console.log("📝 Posting detailed review...");
+      await octokit.rest.pulls.createReview({
+        owner: repoOwner,
+        repo: repoName,
+        pull_number: parseInt(prNumber),
+        body: detailedReview,
+        event: "COMMENT",
+      });
+    } catch (error) {
+      console.error("❌ Failed to post detailed review:", error.message);
+      throw new Error(`Failed to post detailed review: ${error.message}`);
     }
 
     console.log("🎉 AI Teammate review completed successfully!");
+    console.log("✅ Posted overview and changes message");
+    console.log("✅ Posted detailed review comment");
   } catch (error) {
     console.error("❌ Error during AI review:", error.message);
     core.setFailed(`AI review failed: ${error.message}`);

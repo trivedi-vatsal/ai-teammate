@@ -32,24 +32,23 @@ function createSystemPrompt(reviewDepth) {
 }
 
 /**
- * Creates the review request prompt for analyzing code changes
+ * Creates the overview and changes message prompt - invoked as a separate message
  * @param {string} changes - The list of changed files and their modifications
- * @param {string} depth - The review depth level
- * @returns {string} XML-formatted review request prompt
+ * @returns {string} XML-formatted overview and changes prompt
  */
-function createReviewPrompt(changes, depth) {
-  return `<review_request>
+function createOverviewAndChangesPrompt(changes) {
+  return `<overview_and_changes_request>
   <context>
-    You are AI Teammate, an intelligent code reviewer. Analyze ONLY the actual code changes below and provide comprehensive, helpful feedback.
+    You are AI Teammate, an intelligent code reviewer. Analyze ONLY the actual code changes below and provide an overview and summary of changes. This will be followed by a separate detailed review comment.
   </context>
   
   <files_changed>
 ${changes}
   </files_changed>
   
-  <review_framework>
+  <output_format>
     <section id="header">
-      <title>🤖 AI Teammate - Comprehensive Review</title>
+      <title>🤖 AI Teammate - Change Overview</title>
       <description>Start with the AI Teammate logo and name at the top</description>
     </section>
     <section id="overview">
@@ -64,6 +63,45 @@ ${changes}
 |-------|------------------|
 | filename | Brief description of changes |
       </format>
+    </section>
+  </output_format>
+  
+  <instructions>
+    <rule>ALWAYS start with "🤖 AI Teammate - Change Overview" as the header</rule>
+    <rule>Follow with a "Overview" section providing narrative overview of changes</rule>
+    <rule>Include a "Changes" section with a markdown table format:
+      | Files | Change Summaries |
+      |-------|------------------|
+      | filename | description |
+    </rule>
+    <rule>Focus EXCLUSIVELY on the code changes themselves - ignore PR metadata</rule>
+    <rule>Keep it concise but informative</rule>
+    <rule>Use proper markdown formatting</rule>
+    <rule>This message will be followed by a separate detailed review comment</rule>
+  </instructions>
+</overview_and_changes_request>`;
+}
+
+/**
+ * Creates the review request prompt for analyzing code changes (separate comment)
+ * @param {string} changes - The list of changed files and their modifications
+ * @param {string} depth - The review depth level
+ * @returns {string} XML-formatted review request prompt
+ */
+function createReviewPrompt(changes, depth) {
+  return `<review_request>
+  <context>
+    You are AI Teammate, an intelligent code reviewer. Analyze ONLY the actual code changes below and provide comprehensive, helpful feedback. This is a separate detailed review comment that follows the overview message.
+  </context>
+  
+  <files_changed>
+${changes}
+  </files_changed>
+  
+  <review_framework>
+    <section id="header">
+      <title>🤖 AI Teammate - Detailed Review</title>
+      <description>Start with the AI Teammate logo and name at the top</description>
     </section>
     <section id="strengths">
       <title>✅ Strengths</title>
@@ -80,14 +118,8 @@ ${changes}
   </review_framework>
   
   <instructions>
-    <rule>ALWAYS start with "# 🤖 AI Teammate - Comprehensive Review" as the header</rule>
-    <rule>Follow with a "Overview" section providing narrative overview of changes (NON-COLLAPSIBLE)</rule>
-    <rule>Include a "Changes" section with a markdown table format (NON-COLLAPSIBLE):
-      | Files | Change Summaries |
-      |-------|------------------|
-      | filename | description |
-    </rule>
-    <rule>All other sections must be COLLAPSIBLE using &lt;details&gt;&lt;summary&gt; tags</rule>
+    <rule>ALWAYS start with "🤖 AI Teammate - Detailed Review" as the header</rule>
+    <rule>All sections must be COLLAPSIBLE using &lt;details&gt;&lt;summary&gt; tags</rule>
     <rule>For collapsible sections: Format as &lt;details&gt;&lt;summary&gt;✅ Section Title&lt;/summary&gt; content here &lt;/details&gt;</rule>
     <rule>Do NOT use ## markdown headers for collapsible sections - use the details/summary tags only</rule>
     <rule>Focus EXCLUSIVELY on the code changes themselves - ignore PR metadata</rule>
@@ -104,14 +136,14 @@ ${changes}
 }
 
 /**
- * Creates a basic review prompt for simple changes
+ * Creates a basic review prompt for simple changes (separate comment)
  * @param {string} changes - The list of changed files
  * @returns {string} Simplified review prompt
  */
 function createBasicReviewPrompt(changes) {
   return `<review_request>
   <context>
-    You are AI Teammate providing a focused, concise code review. Analyze the essential aspects of these code changes.
+    You are AI Teammate providing a focused, concise code review. Analyze the essential aspects of these code changes. This is a separate detailed review comment that follows the overview message.
   </context>
   
   <files_changed>
@@ -123,19 +155,6 @@ ${changes}
       <title>🤖 AI Teammate - Basic Review</title>
       <description>Start with the AI Teammate logo and name at the top</description>
     </section>
-    <section id="overview">
-      <title>## Overview</title>
-      <description>Concise overview of what changed and the overall impact (2-3 sentences)</description>
-    </section>
-    <section id="changes_table">
-      <title>## Changes</title>
-      <description>Table format with "Files" and "Change Summaries" columns</description>
-      <format>
-| Files | Change Summaries |
-|-------|------------------|
-| filename | Brief description of changes |
-      </format>
-    </section>
     <section id="key_points">
       <title><details><summary>🎯 Key Points</summary></title>
       <description>Most important observations - both positive and areas for improvement. End with </details></description>
@@ -143,13 +162,7 @@ ${changes}
   </review_framework>
   
   <instructions>
-    <rule>ALWAYS start with "# 🤖 AI Teammate - Basic Review" as the header</rule>
-    <rule>Follow with a "Overview" section providing concise overview (NON-COLLAPSIBLE)</rule>
-    <rule>Include a "Changes" section with markdown table (NON-COLLAPSIBLE):
-      | Files | Change Summaries |
-      |-------|------------------|
-      | filename | description |
-    </rule>
+    <rule>ALWAYS start with "🤖 AI Teammate - Basic Review" as the header</rule>
     <rule>Key Points section must be COLLAPSIBLE using &lt;details&gt;&lt;summary&gt; tags</rule>
     <rule>For collapsible sections: Start with &lt;details&gt;&lt;summary&gt;## Section Title&lt;/summary&gt; and end with &lt;/details&gt;</rule>
     <rule>Keep review concise but meaningful</rule>
@@ -163,14 +176,14 @@ ${changes}
 }
 
 /**
- * Creates an expert review prompt for complex changes
+ * Creates an expert review prompt for complex changes (separate comment)
  * @param {string} changes - The list of changed files
  * @returns {string} Comprehensive expert review prompt
  */
 function createExpertReviewPrompt(changes) {
   return `<review_request>
   <context>
-    You are AI Teammate performing an expert-level, comprehensive code review. Provide deep technical analysis with architectural insights and detailed recommendations.
+    You are AI Teammate performing an expert-level, comprehensive code review. Provide deep technical analysis with architectural insights and detailed recommendations. This is a separate detailed review comment that follows the overview message.
   </context>
   
   <files_changed>
@@ -181,19 +194,6 @@ ${changes}
     <section id="header">
       <title>🤖 AI Teammate - Expert Review</title>
       <description>Start with the AI Teammate logo and name at the top</description>
-    </section>
-    <section id="overview">
-      <title>## Overview</title>
-      <description>Comprehensive narrative overview explaining what the changes introduce, how they enhance the system architecture, their technical impact, and overall significance to the codebase</description>
-    </section>
-    <section id="changes_table">
-      <title>## Changes</title>
-      <description>Detailed table format with "Files" and "Change Summaries" columns, providing technical descriptions of each modification</description>
-      <format>
-| Files | Change Summaries |
-|-------|------------------|
-| filename | Detailed technical description of changes and their purpose |
-      </format>
     </section>
     <section id="architectural_impact">
       <title><details><summary> 🏗 Architectural Impact</summary></title>
@@ -218,14 +218,8 @@ ${changes}
   </expert_review_framework>
   
   <expert_instructions>
-    <rule>ALWAYS start with "# 🤖 AI Teammate - Expert Review" as the header</rule>
-    <rule>Follow with comprehensive "Overview" section explaining system impact (NON-COLLAPSIBLE)</rule>
-    <rule>Include detailed "Changes" table with technical descriptions (NON-COLLAPSIBLE):
-      | Files | Change Summaries |
-      |-------|------------------|
-      | filename | detailed technical description |
-    </rule>
-    <rule>ALL other sections must be COLLAPSIBLE using &lt;details&gt;&lt;summary&gt; tags</rule>
+    <rule>ALWAYS start with "🤖 AI Teammate - Expert Review" as the header</rule>
+    <rule>ALL sections must be COLLAPSIBLE using &lt;details&gt;&lt;summary&gt; tags</rule>
     <rule>For collapsible sections: Format as &lt;details&gt;&lt;summary&gt;🏗 Section Title&lt;/summary&gt; content here &lt;/details&gt;</rule>
     <rule>Do NOT use ## markdown headers for collapsible sections - use the details/summary tags only</rule>
     <rule>Perform comprehensive, senior-level technical analysis</rule>
@@ -264,6 +258,7 @@ function createPromptByDepth(changes, depth) {
 
 module.exports = {
   createSystemPrompt,
+  createOverviewAndChangesPrompt,
   createReviewPrompt,
   createBasicReviewPrompt,
   createExpertReviewPrompt,

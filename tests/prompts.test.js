@@ -1,5 +1,6 @@
 const {
   createSystemPrompt,
+  createOverviewAndChangesPrompt,
   createPromptByDepth,
   createBasicReviewPrompt,
   createExpertReviewPrompt,
@@ -18,6 +19,26 @@ README.md (3 changes)
       expect(prompt).toContain("<system_role>");
       expect(prompt).toContain("<review_depth>comprehensive</review_depth>");
       expect(prompt).toContain("Expert AI Code Reviewer - Your AI Teammate");
+    });
+  });
+
+  describe("createOverviewAndChangesPrompt", () => {
+    it("should create overview and changes prompt with required elements", () => {
+      const prompt = createOverviewAndChangesPrompt(mockChanges);
+      expect(prompt).toContain("<overview_and_changes_request>");
+      expect(prompt).toContain("<files_changed>");
+      expect(prompt).toContain(mockChanges);
+      expect(prompt).toContain("🤖 AI Teammate - Change Overview");
+      expect(prompt).toContain("## Overview");
+      expect(prompt).toContain("## Changes");
+      expect(prompt).toContain("separate detailed review comment");
+    });
+
+    it("should focus only on overview and changes sections", () => {
+      const prompt = createOverviewAndChangesPrompt(mockChanges);
+      expect(prompt).not.toContain("Strengths");
+      expect(prompt).not.toContain("Suggestions for Improvement");
+      expect(prompt).not.toContain("Security Considerations");
     });
   });
 
@@ -42,9 +63,11 @@ README.md (3 changes)
       const prompt = createPromptByDepth(mockChanges, "comprehensive");
       expect(prompt).toContain("<review_request>");
       expect(prompt).toContain("comprehensive, helpful feedback");
+      expect(prompt).toContain("separate detailed review comment");
 
       const unknownPrompt = createPromptByDepth(mockChanges, "unknown");
       expect(unknownPrompt).toContain("<review_request>");
+      expect(unknownPrompt).toContain("separate detailed review comment");
     });
   });
 
@@ -55,6 +78,14 @@ README.md (3 changes)
       expect(prompt).toContain("<files_changed>");
       expect(prompt).toContain(mockChanges);
       expect(prompt).toContain("focused, concise code review");
+      expect(prompt).toContain("separate detailed review comment");
+    });
+
+    it("should focus only on review sections without overview and changes", () => {
+      const prompt = createBasicReviewPrompt(mockChanges);
+      expect(prompt).not.toContain("## Overview");
+      expect(prompt).not.toContain("## Changes");
+      expect(prompt).toContain("🎯 Key Points");
     });
   });
 
@@ -66,6 +97,15 @@ README.md (3 changes)
       expect(prompt).toContain(mockChanges);
       expect(prompt).toContain("Security Assessment");
       expect(prompt).toContain("Performance Analysis");
+      expect(prompt).toContain("separate detailed review comment");
+    });
+
+    it("should focus only on expert review sections without overview and changes", () => {
+      const prompt = createExpertReviewPrompt(mockChanges);
+      expect(prompt).not.toContain("## Overview");
+      expect(prompt).not.toContain("## Changes");
+      expect(prompt).toContain("Architectural Impact");
+      expect(prompt).toContain("Expert Recommendations");
     });
   });
 });

@@ -79,7 +79,7 @@ describe("AI Teammate Main Function", () => {
     );
   });
 
-  it("should handle valid inputs correctly", async () => {
+  it("should handle valid inputs correctly and create two separate comments", async () => {
     // Mock valid inputs
     core.getInput.mockImplementation((name) => {
       const inputs = {
@@ -93,12 +93,16 @@ describe("AI Teammate Main Function", () => {
       return inputs[name] || "";
     });
 
-    // Mock Azure OpenAI
+    // Mock Azure OpenAI to return different responses for overview and review
     const { OpenAIClient } = require("@azure/openai");
     const mockClient = {
-      getChatCompletions: jest.fn().mockResolvedValue({
-        choices: [{ message: { content: "Mock AI review response" } }],
-      }),
+      getChatCompletions: jest.fn()
+        .mockResolvedValueOnce({
+          choices: [{ message: { content: "Mock overview and changes response" } }],
+        })
+        .mockResolvedValueOnce({
+          choices: [{ message: { content: "Mock detailed review response" } }],
+        }),
     };
     OpenAIClient.mockReturnValue(mockClient);
 
@@ -121,9 +125,131 @@ describe("AI Teammate Main Function", () => {
     await run();
 
     expect(core.setFailed).not.toHaveBeenCalled();
+    
+    // Should make two API calls to OpenAI
+    expect(mockClient.getChatCompletions).toHaveBeenCalledTimes(2);
+    
+    // Should set both overview and review outputs
+    expect(core.setOutput).toHaveBeenCalledWith(
+      "overview",
+      "Mock overview and changes response"
+    );
     expect(core.setOutput).toHaveBeenCalledWith(
       "review",
-      "Mock AI review response"
+      "Mock detailed review response"
+    );
+    
+    // Should create two separate review comments
+    expect(mockOctokit.rest.pulls.createReview).toHaveBeenCalledTimes(2);
+    expect(mockOctokit.rest.pulls.createReview).toHaveBeenNthCalledWith(1, {
+      owner: "test-owner",
+      repo: "test-repo",
+      pull_number: 123,
+      body: "Mock overview and changes response",
+      event: "COMMENT",
+    });
+    expect(mockOctokit.rest.pulls.createReview).toHaveBeenNthCalledWith(2, {
+      owner: "test-owner",
+      repo: "test-repo",
+      pull_number: 123,
+      body: "Mock detailed review response",
+      event: "COMMENT",
+    });
+  });
+
+  it("should handle overview posting failure", async () => {
+    // Mock valid inputs
+    core.getInput.mockImplementation((name) => {
+      const inputs = {
+        azure_openai_endpoint: "https://test.openai.azure.com/",
+        azure_openai_api_key: "test-key",
+        azure_openai_model_name: "gpt-4",
+        review_depth: "comprehensive",
+        max_tokens: "2000",
+        temperature: "0.3",
+      };
+      return inputs[name] || "";
+    });
+
+    // Mock Azure OpenAI
+    const { OpenAIClient } = require("@azure/openai");
+    const mockClient = {
+      getChatCompletions: jest.fn()
+        .mockResolvedValueOnce({
+          choices: [{ message: { content: "Mock overview response" } }],
+        })
+        .mockResolvedValueOnce({
+          choices: [{ message: { content: "Mock review response" } }],
+        }),
+    };
+    OpenAIClient.mockReturnValue(mockClient);
+
+    // Mock Octokit with failure on first call
+    const mockOctokit = {
+      rest: {
+        pulls: {
+          listFiles: jest.fn().mockResolvedValue({
+            data: [{ filename: "test.js", additions: 5, deletions: 2 }],
+          }),
+          createReview: jest.fn().mockRejectedValueOnce(new Error("API Error")),
+        },
+      },
+    };
+    Octokit.mockReturnValue(mockOctokit);
+
+    await run();
+
+    expect(core.setFailed).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to post overview")
+    );
+  });
+
+  it("should handle detailed review posting failure", async () => {
+    // Mock valid inputs
+    core.getInput.mockImplementation((name) => {
+      const inputs = {
+        azure_openai_endpoint: "https://test.openai.azure.com/",
+        azure_openai_api_key: "test-key",
+        azure_openai_model_name: "gpt-4",
+        review_depth: "comprehensive",
+        max_tokens: "2000",
+        temperature: "0.3",
+      };
+      return inputs[name] || "";
+    });
+
+    // Mock Azure OpenAI
+    const { OpenAIClient } = require("@azure/openai");
+    const mockClient = {
+      getChatCompletions: jest.fn()
+        .mockResolvedValueOnce({
+          choices: [{ message: { content: "Mock overview response" } }],
+        })
+        .mockResolvedValueOnce({
+          choices: [{ message: { content: "Mock review response" } }],
+        }),
+    };
+    OpenAIClient.mockReturnValue(mockClient);
+
+    // Mock Octokit with success on first call, failure on second
+    const mockOctokit = {
+      rest: {
+        pulls: {
+          listFiles: jest.fn().mockResolvedValue({
+            data: [{ filename: "test.js", additions: 5, deletions: 2 }],
+          }),
+          createReview: jest.fn()
+            .mockResolvedValueOnce({})
+            .mockRejectedValueOnce(new Error("API Error")),
+        },
+      },
+    };
+    Octokit.mockReturnValue(mockOctokit);
+
+    await run();
+
+    expect(core.setFailed).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to post detailed review")
     );
   });
 });
