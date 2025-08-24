@@ -2,8 +2,8 @@ name: "AI Teammate - PR Review"
 description: "Automated AI-powered pull request reviews using Azure OpenAI"
 author: "Vatsal Trivedi <trivedivatsal005@gmail.com>"
 branding:
-  icon: "activityat-sign"
-  color: "black"
+  icon: "feather"
+  color: "yellow"
 
 inputs:
   github_token:
