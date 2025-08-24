@@ -146,7 +146,7 @@ ${changes}
   <instructions>
     <rule>ALWAYS start with "🤖 AI Teammate - Detailed Review" as the header</rule>
     <rule>All sections must be COLLAPSIBLE using &lt;details&gt;&lt;summary&gt; tags</rule>
-    <rule>For collapsible sections: Format as &lt;details&gt;&lt;summary&gt;✅ Section Title&lt;/summary&gt; content here &lt;/details&gt;</rule>
+    <rule>For collapsible sections: Format as &lt;details&gt;&lt;summary&gt;✅ Section Title&lt;/summary&gt;\n\n---\n\n content here \n\n---\n\n&lt;/details&gt;</rule>
     <rule>Do NOT use ## markdown headers for collapsible sections - use the details/summary tags only</rule>
     <rule>Focus EXCLUSIVELY on the code changes themselves - ignore PR metadata</rule>
     <rule>Be constructive, specific, and educational in your feedback</rule>
@@ -183,14 +183,14 @@ ${changes}
     </section>
     <section id="key_points">
       <title><details><summary>🎯 Key Points</summary></title>
-      <description>Most important observations - both positive and areas for improvement. End with </details></description>
+      <description>Most important observations - both positive and areas for improvement. End with ---\n\n</details></description>
     </section>
   </review_framework>
   
   <instructions>
     <rule>ALWAYS start with "🤖 AI Teammate - Basic Review" as the header</rule>
     <rule>Key Points section must be COLLAPSIBLE using &lt;details&gt;&lt;summary&gt; tags</rule>
-    <rule>For collapsible sections: Start with &lt;details&gt;&lt;summary&gt;## Section Title&lt;/summary&gt; and end with &lt;/details&gt;</rule>
+    <rule>For collapsible sections: Start with &lt;details&gt;&lt;summary&gt;## Section Title&lt;/summary&gt;\n\n---\n\n and end with \n\n---\n\n&lt;/details&gt;</rule>
     <rule>Keep review concise but meaningful</rule>
     <rule>Focus on the most critical aspects only</rule>
     <rule>Highlight both good practices and essential improvements</rule>
@@ -223,30 +223,30 @@ ${changes}
     </section>
     <section id="architectural_impact">
       <title><details><summary> 🏗 Architectural Impact</summary></title>
-      <description>How these changes affect system design, patterns, and structure. End with </details></description>
+      <description>How these changes affect system design, patterns, and structure. End with ---\n\n</details></description>
     </section>
     <section id="code_quality_deep_dive">
       <title><details><summary>💻 Code Quality Analysis</summary></title>
-      <description>Detailed analysis of code patterns, practices, and implementation quality. End with </details></description>
+      <description>Detailed analysis of code patterns, practices, and implementation quality. End with ---\n\n</details></description>
     </section>
     <section id="security_audit">
       <title><details><summary>🔒 Security Assessment</summary></title>
-      <description>Comprehensive security review including vulnerability analysis and threat modeling. End with </details></description>
+      <description>Comprehensive security review including vulnerability analysis and threat modeling. End with ---\n\n</details></description>
     </section>
     <section id="performance_analysis">
       <title><details><summary>⚡ Performance Analysis</summary></title>
-      <description>Performance implications, bottlenecks, optimization opportunities, and scalability considerations. End with </details></description>
+      <description>Performance implications, bottlenecks, optimization opportunities, and scalability considerations. End with ---\n\n</details></description>
     </section>
     <section id="expert_recommendations">
       <title><details><summary>🎯 Expert Recommendations</summary></title>
-      <description>Prioritized, detailed recommendations with implementation guidance and rationale. End with </details></description>
+      <description>Prioritized, detailed recommendations with implementation guidance and rationale. End with ---\n\n</details></description>
     </section>
   </expert_review_framework>
   
   <expert_instructions>
     <rule>ALWAYS start with "🤖 AI Teammate - Expert Review" as the header</rule>
     <rule>ALL sections must be COLLAPSIBLE using &lt;details&gt;&lt;summary&gt; tags</rule>
-    <rule>For collapsible sections: Format as &lt;details&gt;&lt;summary&gt;🏗 Section Title&lt;/summary&gt; content here &lt;/details&gt;</rule>
+    <rule>For collapsible sections: Format as &lt;details&gt;&lt;summary&gt;🏗 Section Title&lt;/summary&gt;\n\n---\n\n content here \n\n---\n\n&lt;/details&gt;</rule>
     <rule>Do NOT use ## markdown headers for collapsible sections - use the details/summary tags only</rule>
     <rule>Perform comprehensive, senior-level technical analysis</rule>
     <rule>Consider system-wide implications and architectural patterns</rule>

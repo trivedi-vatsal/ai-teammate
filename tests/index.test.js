@@ -93,14 +93,17 @@ describe("AI Teammate Main Function", () => {
     // Mock Azure OpenAI to return different responses for overview and review
     const { OpenAIClient } = require("@azure/openai");
     const mockClient = {
-      getChatCompletions: jest.fn()
+      getChatCompletions: jest
+        .fn()
         .mockResolvedValueOnce({
-          choices: [{ message: { content: "Mock overview and changes response" } }],
-          usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 }
+          choices: [
+            { message: { content: "Mock overview and changes response" } },
+          ],
+          usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
         })
         .mockResolvedValueOnce({
           choices: [{ message: { content: "Mock detailed review response" } }],
-          usage: { promptTokens: 200, completionTokens: 100, totalTokens: 300 }
+          usage: { promptTokens: 200, completionTokens: 100, totalTokens: 300 },
         }),
     };
     OpenAIClient.mockReturnValue(mockClient);
@@ -124,28 +127,30 @@ describe("AI Teammate Main Function", () => {
     await run();
 
     expect(core.setFailed).not.toHaveBeenCalled();
-    
+
     // Should make two API calls to OpenAI
     expect(mockClient.getChatCompletions).toHaveBeenCalledTimes(2);
-    
+
     // Should set both overview and review outputs with token usage summaries
     expect(core.setOutput).toHaveBeenCalledWith(
       "overview",
       expect.stringContaining("Mock overview and changes response")
     );
     expect(core.setOutput).toHaveBeenCalledWith(
-      "overview",
-      expect.stringContaining("📊 Token Usage - Overview")
-    );
-    expect(core.setOutput).toHaveBeenCalledWith(
       "review",
       expect.stringContaining("Mock detailed review response")
+    );
+
+    // Should include token usage tables in collapsible sections
+    expect(core.setOutput).toHaveBeenCalledWith(
+      "overview",
+      expect.stringContaining("📊 Token Usage")
     );
     expect(core.setOutput).toHaveBeenCalledWith(
       "review",
       expect.stringContaining("📊 Token Usage")
     );
-    
+
     // Should create two separate review comments
     expect(mockOctokit.rest.pulls.createReview).toHaveBeenCalledTimes(2);
     expect(mockOctokit.rest.pulls.createReview).toHaveBeenNthCalledWith(1, {
@@ -180,14 +185,15 @@ describe("AI Teammate Main Function", () => {
     // Mock Azure OpenAI
     const { OpenAIClient } = require("@azure/openai");
     const mockClient = {
-      getChatCompletions: jest.fn()
+      getChatCompletions: jest
+        .fn()
         .mockResolvedValueOnce({
           choices: [{ message: { content: "Mock overview response" } }],
-          usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 }
+          usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
         })
         .mockResolvedValueOnce({
           choices: [{ message: { content: "Mock review response" } }],
-          usage: { promptTokens: 200, completionTokens: 100, totalTokens: 300 }
+          usage: { promptTokens: 200, completionTokens: 100, totalTokens: 300 },
         }),
     };
     OpenAIClient.mockReturnValue(mockClient);
@@ -228,14 +234,15 @@ describe("AI Teammate Main Function", () => {
     // Mock Azure OpenAI
     const { OpenAIClient } = require("@azure/openai");
     const mockClient = {
-      getChatCompletions: jest.fn()
+      getChatCompletions: jest
+        .fn()
         .mockResolvedValueOnce({
           choices: [{ message: { content: "Mock overview response" } }],
-          usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 }
+          usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
         })
         .mockResolvedValueOnce({
           choices: [{ message: { content: "Mock review response" } }],
-          usage: { promptTokens: 200, completionTokens: 100, totalTokens: 300 }
+          usage: { promptTokens: 200, completionTokens: 100, totalTokens: 300 },
         }),
     };
     OpenAIClient.mockReturnValue(mockClient);
@@ -247,7 +254,8 @@ describe("AI Teammate Main Function", () => {
           listFiles: jest.fn().mockResolvedValue({
             data: [{ filename: "test.js", additions: 5, deletions: 2 }],
           }),
-          createReview: jest.fn()
+          createReview: jest
+            .fn()
             .mockResolvedValueOnce({})
             .mockRejectedValueOnce(new Error("API Error")),
         },

@@ -145,24 +145,27 @@ async function run() {
 
     // Add token usage summary to overview message
     const overviewTokens = overviewResult.usage;
-    console.log(
-      `📊 Overview API Call - Input: ${overviewTokens.promptTokens}, Output: ${overviewTokens.completionTokens}, Total: ${overviewTokens.totalTokens}`
-    );
 
     const overviewWithTokens =
       overviewMessage +
-      `\n\n<details>\n<summary>📊 Token Usage - Overview</summary>\n\n` +
-      `**Input Tokens:** ${overviewTokens.promptTokens}\n` +
-      `**Output Tokens:** ${overviewTokens.completionTokens}\n` +
-      `**Total Tokens:** ${overviewTokens.totalTokens}\n` +
-      `**Context Length:** ${changes.length} characters\n\n` +
+      `\n\n<details><summary>📊 Token Usage</summary>\n\n---\n\n` +
+      `| Input Tokens | Output Tokens | Total Tokens | Context Length      |\n` +
+      `|--------------|---------------|--------------|---------------------|\n` +
+      `| ${overviewTokens.promptTokens
+        .toLocaleString()
+        .padEnd(12)} | ${overviewTokens.completionTokens
+        .toLocaleString()
+        .padEnd(13)} | ${overviewTokens.totalTokens
+        .toLocaleString()
+        .padEnd(
+          12
+        )} | ${changes.length.toLocaleString()} characters${" ".repeat(
+        Math.max(0, 8 - changes.length.toLocaleString().length)
+      )} |\n\n---\n\n` +
       `</details>`;
 
     // Create detailed review prompt
     const reviewPrompt = createPromptByDepth(changes, reviewDepth);
-
-    // Generate detailed review
-    console.log("🔍 Generating detailed review...");
     const reviewResult = await client.getChatCompletions(
       modelName,
       [
@@ -184,17 +187,19 @@ async function run() {
 
     // Add token usage summary to detailed review
     const reviewTokens = reviewResult.usage;
-    console.log(
-      `📊 Review API Call - Input: ${reviewTokens.promptTokens}, Output: ${reviewTokens.completionTokens}, Total: ${reviewTokens.totalTokens}`
-    );
 
     const detailedReviewWithTokens =
       detailedReview +
-      `\n\n<details>\n<summary>📊 Token Usage</summary>\n\n` +
-      `**Input Tokens:** ${reviewTokens.promptTokens}\n` +
-      `**Output Tokens:** ${reviewTokens.completionTokens}\n` +
-      `**Total Tokens:** ${reviewTokens.totalTokens}\n` +
-      `**Review Depth:** ${reviewDepth}\n\n` +
+      `\n\n<details><summary>📊 Token Usage</summary>\n\n---\n\n` +
+      `| Input Tokens | Output Tokens | Total Tokens | Review Depth        |\n` +
+      `|--------------|---------------|--------------|---------------------|\n` +
+      `| ${reviewTokens.promptTokens
+        .toLocaleString()
+        .padEnd(12)} | ${reviewTokens.completionTokens
+        .toLocaleString()
+        .padEnd(13)} | ${reviewTokens.totalTokens
+        .toLocaleString()
+        .padEnd(12)} | ${reviewDepth.padEnd(19)} |\n\n---\n\n` +
       `</details>`;
 
     // Set outputs for GitHub Actions

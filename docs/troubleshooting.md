@@ -81,7 +81,7 @@ on:
 2. **Monitor Token Usage**: Check the token usage reports in comments
 
    ```markdown
-   📊 Token Usage - Overview
+   📊 Token Usage
    - Input Tokens: 1,500
    - Output Tokens: 300
    - Total Tokens: 1,800

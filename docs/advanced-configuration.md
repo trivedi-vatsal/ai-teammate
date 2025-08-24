@@ -68,7 +68,7 @@ AI Teammate now posts **two separate comments** for better organization:
 |------|---------|
 | `filename.js` | [Specific improvements made] |
 
-📊 Token Usage - Overview
+📊 Token Usage
 - Input Tokens: 150
 - Output Tokens: 75
 - Total Tokens: 225
