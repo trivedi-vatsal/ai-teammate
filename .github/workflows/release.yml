@@ -2,7 +2,22 @@ name: Release Action
 
 on:
   workflow_dispatch:
-    # Allow deployment of release branches - pattern will be validated in job
+    inputs:
+      version_type:
+        description: 'Release type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - custom
+      custom_version:
+        description: 'Custom version (only if version_type is custom)'
+        required: false
+        type: string
+  push:
     branches:
       - "release/v*"
 
@@ -26,19 +41,66 @@ jobs:
       - name: Validate release branch name
         run: |
           BRANCH="${{ github.ref_name }}"
-          # Expect: release/v<semver>, e.g. release/v1.2.3 or release/v1.2.3-beta.1
-          if [[ ! "$BRANCH" =~ ^release/v[0-9]+(\.[0-9]+){2}(-[A-Za-z0-9.-]+)?$ ]]; then
-            echo "::error::This workflow must be run from a branch named release/v<semver> (e.g., release/v1.2.3). Current: $BRANCH"
+          # Allow manual dispatch from main branch or release branches
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "$BRANCH" == "main" ]]; then
+            echo "✅ Manual dispatch from main branch allowed"
+          elif [[ "$BRANCH" =~ ^release/v[0-9]+(\.[0-9]+){2}(-[A-Za-z0-9.-]+)?$ ]]; then
+            echo "✅ Valid release branch: $BRANCH"
+          else
+            echo "::error::Invalid branch for release. Use 'main' for manual dispatch or 'release/v<semver>' branch (e.g., release/v1.2.3). Current: $BRANCH"
             exit 1
           fi
 
-      - name: Extract version from branch name
+      - name: Determine version
         id: extract_version
         run: |
-          BRANCH_NAME="${{ github.ref_name }}"
-          VERSION=${BRANCH_NAME#release/}
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "Extracted version: ${VERSION}"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.ref_name }}" == "main" ]]; then
+            # Manual dispatch - calculate version based on input
+            CURRENT_VERSION=$(node -p "require('./package.json').version")
+            
+            case "${{ github.event.inputs.version_type }}" in
+              "patch")
+                NEW_VERSION=$(node -p "
+                  const v = '$CURRENT_VERSION'.split('.');
+                  v[2] = String(Number(v[2]) + 1);
+                  'v' + v.join('.');
+                ")
+                ;;
+              "minor")
+                NEW_VERSION=$(node -p "
+                  const v = '$CURRENT_VERSION'.split('.');
+                  v[1] = String(Number(v[1]) + 1);
+                  v[2] = '0';
+                  'v' + v.join('.');
+                ")
+                ;;
+              "major")
+                NEW_VERSION=$(node -p "
+                  const v = '$CURRENT_VERSION'.split('.');
+                  v[0] = String(Number(v[0]) + 1);
+                  v[1] = '0';
+                  v[2] = '0';
+                  'v' + v.join('.');
+                ")
+                ;;
+              "custom")
+                if [[ -z "${{ github.event.inputs.custom_version }}" ]]; then
+                  echo "::error::Custom version is required when version_type is 'custom'"
+                  exit 1
+                fi
+                NEW_VERSION="v${{ github.event.inputs.custom_version }}"
+                ;;
+            esac
+            
+            echo "version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+            echo "Calculated version: ${NEW_VERSION}"
+          else
+            # Release branch - extract from branch name
+            BRANCH_NAME="${{ github.ref_name }}"
+            VERSION=${BRANCH_NAME#release/}
+            echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+            echo "Extracted version from branch: ${VERSION}"
+          fi
 
       - name: Remove existing release and tag if present
         env:
@@ -81,21 +143,96 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Update package.json version (if manual dispatch)
+        if: github.event_name == 'workflow_dispatch' && github.ref_name == 'main'
+        run: |
+          VERSION="${{ steps.extract_version.outputs.version }}"
+          CLEAN_VERSION=${VERSION#v}
+          
+          # Update package.json version
+          node -e "
+            const pkg = require('./package.json');
+            pkg.version = '$CLEAN_VERSION';
+            require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+          
+          echo "✅ Updated package.json version to $CLEAN_VERSION"
+
+      - name: Run tests
+        run: npm test
+        env:
+          CI: true
+
+      - name: Validate package.json version matches branch
+        run: |
+          VERSION="${{ steps.extract_version.outputs.version }}"
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          
+          # Remove 'v' prefix from VERSION for comparison
+          CLEAN_VERSION=${VERSION#v}
+          
+          if [ "$PACKAGE_VERSION" != "$CLEAN_VERSION" ]; then
+            echo "::error::Version mismatch! package.json: $PACKAGE_VERSION, branch: $CLEAN_VERSION"
+            echo "::error::Update package.json version to match release branch"
+            exit 1
+          fi
+          echo "✅ Version validation passed: $PACKAGE_VERSION"
+
       - name: Build
         run: npm run build
 
       - name: Verify build output
         run: |
           test -f dist/index.js || { echo "::error::dist/index.js not found. Ensure your build outputs to dist/"; exit 1; }
+          echo "✅ Build output verified"
+
+      - name: Validate action.yml
+        run: |
+          # Check if action.yml is valid YAML and has required fields
+          node -e "
+            const yaml = require('fs').readFileSync('action.yml', 'utf8');
+            const action = require('js-yaml').load(yaml);
+            if (!action.name || !action.description || !action.runs) {
+              throw new Error('Invalid action.yml: missing required fields');
+            }
+            if (action.runs.main !== 'dist/index.js') {
+              throw new Error('action.yml main should point to dist/index.js');
+            }
+            console.log('✅ action.yml validation passed');
+          " 2>/dev/null || {
+            echo "::warning::action.yml validation skipped (js-yaml not available)"
+          }
 
       - name: Commit built files to the release branch
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          # Force-add dist even if it's gitignored (common in Actions repos)
+          
+          # Set environment variable to skip dist cleaning in pre-commit hook
+          export SKIP_DIST_CLEAN=1
+          
+          # Add all changes (package.json version update, dist files)
+          git add package.json
           git add -f dist/
-          git commit -m "chore(release): build for ${{ steps.extract_version.outputs.version }}" || echo "No changes to commit"
-          git push origin HEAD:${{ github.ref_name }}
+          
+          # Commit changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            # Skip pre-commit hooks for release commits
+            git commit -m "chore(release): prepare for ${{ steps.extract_version.outputs.version }}" --no-verify
+            
+            # Push to current branch or create new release branch if on main
+            if [[ "${{ github.ref_name }}" == "main" ]]; then
+              RELEASE_BRANCH="release/${{ steps.extract_version.outputs.version }}"
+              git checkout -b "$RELEASE_BRANCH"
+              git push origin "$RELEASE_BRANCH"
+              echo "✅ Created and pushed release branch: $RELEASE_BRANCH"
+            else
+              git push origin HEAD:${{ github.ref_name }}
+              echo "✅ Pushed changes to release branch"
+            fi
+          fi
 
       - name: Create GitHub Release (and tag)
         env:
@@ -105,7 +242,49 @@ jobs:
           VERSION="${{ steps.extract_version.outputs.version }}"
           # Create a release pointing at the current commit of this branch.
           gh release create "$VERSION" \
-            --title "Release $VERSION" \
+            --title "AI Teammate $VERSION" \
             --target "${GITHUB_SHA}" \
-            --generate-notes
-          echo "Release $VERSION created."
+            --generate-notes \
+            --notes "🤖 **AI Teammate - PR Review Action**
+
+          **What's New in $VERSION:**
+          
+          $(gh api repos/${{ github.repository }}/releases/latest --jq '.body // \"Initial release\"' 2>/dev/null || echo 'Initial release of AI Teammate action')
+          
+          ---
+          
+          **📋 Features:**
+          - 🔍 Pure code analysis (ignores PR metadata)
+          - 🤖 Azure OpenAI powered reviews
+          - 📊 Configurable review depth (basic/comprehensive/expert)
+          - 🔧 Customizable parameters
+          - 💬 Automatic PR comments
+          
+          **🚀 Quick Setup:**
+          \`\`\`yaml
+          - uses: trivedi-vatsal/ai-teammate@$VERSION
+            with:
+              azure_openai_endpoint: \${{ secrets.AZURE_OPENAI_ENDPOINT }}
+              azure_openai_api_key: \${{ secrets.AZURE_OPENAI_API_KEY }}
+              azure_openai_model_name: \${{ secrets.AZURE_OPENAI_MODEL_NAME }}
+          \`\`\`
+          
+          📚 [Full Documentation](https://github.com/trivedi-vatsal/ai-teammate#readme)"
+          echo "✅ Release $VERSION created successfully"
+
+      - name: Update marketplace tags
+        run: |
+          VERSION="${{ steps.extract_version.outputs.version }}"
+          MAJOR_VERSION=$(echo "$VERSION" | cut -d. -f1)
+          
+          echo "🏷️ Creating/updating marketplace tags..."
+          
+          # Create or update major version tag (e.g., v1)
+          git tag -f "$MAJOR_VERSION" "${GITHUB_SHA}"
+          git push origin "$MAJOR_VERSION" --force
+          
+          # Create or update 'latest' tag for marketplace
+          git tag -f "latest" "${GITHUB_SHA}"
+          git push origin "latest" --force
+          
+          echo "✅ Marketplace tags updated: $MAJOR_VERSION, latest"

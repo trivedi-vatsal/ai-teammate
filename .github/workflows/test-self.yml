@@ -1,11 +1,12 @@
-name: AI Teammate - Example Usage
+name: Test AI Teammate in Current Repo
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    branches: [main]
 
 jobs:
-  ai-pr-review:
+  test-local-action:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -15,8 +16,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: AI PR Review
-        uses: trivedi-vatsal/ai-teammate@v1
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies and build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Test AI PR Review (Local Action)
+        uses: ./
         with:
           azure_openai_endpoint: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
           azure_openai_api_key: ${{ secrets.AZURE_OPENAI_API_KEY }}

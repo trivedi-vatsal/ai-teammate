@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Clean dist folder before commit (except during release process)
+if [ -d "dist" ] && [ -z "$SKIP_DIST_CLEAN" ]; then
+  echo "🧹 Cleaning dist/ folder before commit..."
+  rm -rf dist/
+  echo "✅ dist/ folder cleaned"
+fi
+
+# Run tests
+echo "🧪 Running tests..."
+npm test

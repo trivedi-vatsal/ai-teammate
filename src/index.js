@@ -19,7 +19,7 @@ async function run() {
       core.getInput('pr_number');
     
     const repoOwner = process.env.GITHUB_REPOSITORY_OWNER;
-    const repoName = process.env.GITHUB_REPOSITORY.split('/')[1];
+    const repoName = process.env.GITHUB_REPOSITORY ? process.env.GITHUB_REPOSITORY.split('/')[1] : null;
 
     // Validate required inputs
     if (!endpoint || !apiKey || !modelName) {
@@ -47,6 +47,7 @@ async function run() {
 
     // Get PR changes
     console.log("📊 Fetching PR changes...");
+    let changes;
     try {
       const { data: files } = await octokit.rest.pulls.listFiles({
         owner: repoOwner,
@@ -54,7 +55,7 @@ async function run() {
         pull_number: parseInt(prNumber),
       });
 
-      const changes = files
+      changes = files
         .map((f) => `${f.filename} (${f.additions + f.deletions} changes)`)
         .join("\n");
       console.log(`📁 Found ${files.length} changed files`);

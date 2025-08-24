@@ -4,8 +4,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Build output
+# Build output (but keep dist/ for GitHub Actions)
 build/
+# dist/ folder is cleaned by pre-commit hook but included in releases
+dist/
 
 # Environment variables
 .env
