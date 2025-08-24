@@ -6,7 +6,7 @@
 
 > **AI-powered pull request reviews that focus purely on code changes**
 
-AI Teammate automatically reviews your pull requests using Azure OpenAI, providing intelligent, constructive feedback based solely on the actual code modifications. No more bias from PR titles or descriptions - just pure code analysis.
+AI Teammate automatically reviews your pull requests using Azure OpenAI, providing intelligent, constructive feedback based solely on the actual code modifications. No more bias from PR titles or descriptions - just pure code analysis.    
 
 ## ✨ Features
 
