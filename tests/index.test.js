@@ -41,7 +41,6 @@ describe("AI Teammate Main Function", () => {
         azure_openai_api_key: "",
         azure_openai_model_name: "",
         review_depth: "comprehensive",
-        max_tokens: "2000",
         temperature: "0.3",
       };
       return inputs[name] || "";
@@ -62,7 +61,6 @@ describe("AI Teammate Main Function", () => {
         azure_openai_api_key: "test-key",
         azure_openai_model_name: "gpt-4",
         review_depth: "comprehensive",
-        max_tokens: "2000",
         temperature: "0.3",
       };
       return inputs[name] || "";
@@ -87,7 +85,6 @@ describe("AI Teammate Main Function", () => {
         azure_openai_api_key: "test-key",
         azure_openai_model_name: "gpt-4",
         review_depth: "comprehensive",
-        max_tokens: "2000",
         temperature: "0.3",
       };
       return inputs[name] || "";
@@ -99,9 +96,11 @@ describe("AI Teammate Main Function", () => {
       getChatCompletions: jest.fn()
         .mockResolvedValueOnce({
           choices: [{ message: { content: "Mock overview and changes response" } }],
+          usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 }
         })
         .mockResolvedValueOnce({
           choices: [{ message: { content: "Mock detailed review response" } }],
+          usage: { promptTokens: 200, completionTokens: 100, totalTokens: 300 }
         }),
     };
     OpenAIClient.mockReturnValue(mockClient);
@@ -129,14 +128,22 @@ describe("AI Teammate Main Function", () => {
     // Should make two API calls to OpenAI
     expect(mockClient.getChatCompletions).toHaveBeenCalledTimes(2);
     
-    // Should set both overview and review outputs
+    // Should set both overview and review outputs with token usage summaries
     expect(core.setOutput).toHaveBeenCalledWith(
       "overview",
-      "Mock overview and changes response"
+      expect.stringContaining("Mock overview and changes response")
+    );
+    expect(core.setOutput).toHaveBeenCalledWith(
+      "overview",
+      expect.stringContaining("📊 Token Usage - Overview")
     );
     expect(core.setOutput).toHaveBeenCalledWith(
       "review",
-      "Mock detailed review response"
+      expect.stringContaining("Mock detailed review response")
+    );
+    expect(core.setOutput).toHaveBeenCalledWith(
+      "review",
+      expect.stringContaining("📊 Token Usage - Detailed Review")
     );
     
     // Should create two separate review comments
@@ -145,14 +152,14 @@ describe("AI Teammate Main Function", () => {
       owner: "test-owner",
       repo: "test-repo",
       pull_number: 123,
-      body: "Mock overview and changes response",
+      body: expect.stringContaining("Mock overview and changes response"),
       event: "COMMENT",
     });
     expect(mockOctokit.rest.pulls.createReview).toHaveBeenNthCalledWith(2, {
       owner: "test-owner",
       repo: "test-repo",
       pull_number: 123,
-      body: "Mock detailed review response",
+      body: expect.stringContaining("Mock detailed review response"),
       event: "COMMENT",
     });
   });
@@ -165,7 +172,6 @@ describe("AI Teammate Main Function", () => {
         azure_openai_api_key: "test-key",
         azure_openai_model_name: "gpt-4",
         review_depth: "comprehensive",
-        max_tokens: "2000",
         temperature: "0.3",
       };
       return inputs[name] || "";
@@ -177,9 +183,11 @@ describe("AI Teammate Main Function", () => {
       getChatCompletions: jest.fn()
         .mockResolvedValueOnce({
           choices: [{ message: { content: "Mock overview response" } }],
+          usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 }
         })
         .mockResolvedValueOnce({
           choices: [{ message: { content: "Mock review response" } }],
+          usage: { promptTokens: 200, completionTokens: 100, totalTokens: 300 }
         }),
     };
     OpenAIClient.mockReturnValue(mockClient);
@@ -212,7 +220,6 @@ describe("AI Teammate Main Function", () => {
         azure_openai_api_key: "test-key",
         azure_openai_model_name: "gpt-4",
         review_depth: "comprehensive",
-        max_tokens: "2000",
         temperature: "0.3",
       };
       return inputs[name] || "";
@@ -224,9 +231,11 @@ describe("AI Teammate Main Function", () => {
       getChatCompletions: jest.fn()
         .mockResolvedValueOnce({
           choices: [{ message: { content: "Mock overview response" } }],
+          usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 }
         })
         .mockResolvedValueOnce({
           choices: [{ message: { content: "Mock review response" } }],
+          usage: { promptTokens: 200, completionTokens: 100, totalTokens: 300 }
         }),
     };
     OpenAIClient.mockReturnValue(mockClient);

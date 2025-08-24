@@ -28,7 +28,7 @@ README.md (3 changes)
       expect(prompt).toContain("<overview_and_changes_request>");
       expect(prompt).toContain("<files_changed>");
       expect(prompt).toContain(mockChanges);
-      expect(prompt).toContain("🤖 AI Teammate - Change Overview");
+      expect(prompt).toContain("🤖 AI Teammate");
       expect(prompt).toContain("## Overview");
       expect(prompt).toContain("## Changes");
       expect(prompt).toContain("separate detailed review comment");
