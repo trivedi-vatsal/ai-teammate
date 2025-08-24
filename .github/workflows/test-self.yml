@@ -1,4 +1,4 @@
-name: Test AI Teammate in Current Repo
+name: Test AI Teammate
 
 on:
   pull_request:
@@ -27,7 +27,7 @@ jobs:
           npm ci
           npm run build
 
-      - name: Test AI PR Review (Local Action)
+      - name: Test AI PR Review (expert)
         uses: ./
         with:
           azure_openai_endpoint: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
@@ -35,4 +35,24 @@ jobs:
           azure_openai_model_name: ${{ secrets.AZURE_OPENAI_MODEL_NAME }}
           review_depth: "expert"
           max_tokens: "2000"
-          temperature: "0.7"
+          temperature: "0.5"
+
+      - name: Test AI PR Review (comprehensive)
+        uses: ./
+        with:
+          azure_openai_endpoint: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          azure_openai_api_key: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          azure_openai_model_name: ${{ secrets.AZURE_OPENAI_MODEL_NAME }}
+          review_depth: "comprehensive"
+          max_tokens: "2000"
+          temperature: "0.5"
+
+      - name: Test AI PR Review (basic)
+        uses: ./
+        with:
+          azure_openai_endpoint: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          azure_openai_api_key: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          azure_openai_model_name: ${{ secrets.AZURE_OPENAI_MODEL_NAME }}
+          review_depth: "basic"
+          max_tokens: "2000"
+          temperature: "0.5"

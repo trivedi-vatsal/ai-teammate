@@ -49,7 +49,7 @@ ${changes}
   
   <review_framework>
     <section id="header">
-      <title>🤖 AI Teammate</title>
+      <title>🤖 AI Teammate - Comprehensive Review</title>
       <description>Start with the AI Teammate logo and name at the top</description>
     </section>
     <section id="overview">
@@ -80,7 +80,7 @@ ${changes}
   </review_framework>
   
   <instructions>
-    <rule>ALWAYS start with "# 🤖 AI Teammate" as the header</rule>
+    <rule>ALWAYS start with "# 🤖 AI Teammate - Comprehensive Review" as the header</rule>
     <rule>Follow with a "Overview" section providing narrative overview of changes (NON-COLLAPSIBLE)</rule>
     <rule>Include a "Changes" section with a markdown table format (NON-COLLAPSIBLE):
       | Files | Change Summaries |
@@ -119,7 +119,7 @@ ${changes}
   
   <review_framework>
     <section id="header">
-      <title>🤖 AI Teammate</title>
+      <title>🤖 AI Teammate - Basic Review</title>
       <description>Start with the AI Teammate logo and name at the top</description>
     </section>
     <section id="overview">
@@ -142,7 +142,7 @@ ${changes}
   </review_framework>
   
   <instructions>
-    <rule>ALWAYS start with "# 🤖 AI Teammate" as the header</rule>
+    <rule>ALWAYS start with "# 🤖 AI Teammate - Basic Review" as the header</rule>
     <rule>Follow with a "Overview" section providing concise overview (NON-COLLAPSIBLE)</rule>
     <rule>Include a "Changes" section with markdown table (NON-COLLAPSIBLE):
       | Files | Change Summaries |
@@ -178,7 +178,7 @@ ${changes}
   
   <expert_review_framework>
     <section id="header">
-      <title>🤖 AI Teammate</title>
+      <title>🤖 AI Teammate - Expert Review</title>
       <description>Start with the AI Teammate logo and name at the top</description>
     </section>
     <section id="overview">
@@ -195,11 +195,11 @@ ${changes}
       </format>
     </section>
     <section id="architectural_impact">
-      <title><details><summary>## 🏗 Architectural Impact</summary></title>
+      <title><details><summary> 🏗 Architectural Impact</summary></title>
       <description>How these changes affect system design, patterns, and structure. End with </details></description>
     </section>
     <section id="code_quality_deep_dive">
-      <title>� Code Quality Analysis</title>
+      <title>💻 Code Quality Analysis</title>
       <description>Detailed analysis of code patterns, practices, and implementation quality</description>
     </section>
     <section id="security_audit">
@@ -217,7 +217,7 @@ ${changes}
   </expert_review_framework>
   
   <expert_instructions>
-    <rule>ALWAYS start with "🤖 AI Teammate" as the header</rule>
+    <rule>ALWAYS start with "# 🤖 AI Teammate - Expert Review" as the header</rule>
     <rule>Follow with comprehensive "Overview" section explaining system impact (NON-COLLAPSIBLE)</rule>
     <rule>Include detailed "Changes" table with technical descriptions (NON-COLLAPSIBLE):
       | Files | Change Summaries |
